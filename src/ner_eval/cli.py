@@ -5,7 +5,7 @@ from typing import Annotated
 
 import typer
 
-from ner_eval import data
+from ner_eval import data, inventory
 from ner_eval.methods import METHODS
 from ner_eval.metrics import score
 
@@ -54,6 +54,14 @@ def list_() -> None:
     for ds in data.list_datasets():
         counts = " ".join(f"{s}={len(x)}" for s, x in data.load(ds).items())
         typer.echo(f"{ds:<50} {counts}")
+
+
+@app.command()
+def tags() -> None:
+    """Print entity-type inventories as Markdown tables (as embedded in the README)."""
+    typer.echo(inventory.uner_table())
+    typer.echo()
+    typer.echo(inventory.openner_table())
 
 
 @app.command()
