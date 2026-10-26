@@ -2,9 +2,11 @@
 
 A harness for comparing named entity recognition methods on [Few-NERD], a large,
 manually annotated English NER dataset built from Wikipedia. Few-NERD has 8 coarse and
-66 fine-grained entity types.
+66 fine-grained entity types. It was introduced in [Few-NERD: A Few-shot Named Entity
+Recognition Dataset][paper] (Ding et al., ACL 2021).
 
 [Few-NERD]: https://ningding97.github.io/fewnerd/
+[paper]: https://aclanthology.org/2021.acl-long.248/
 
 ## Dataset
 
