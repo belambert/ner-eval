@@ -5,8 +5,9 @@
 #
 # Each run writes $RESULTS/<method>-<level>.jsonl and logs training progress to
 # $RESULTS/logs/<method>-<level>.log. Finished runs are skipped, so rerunning resumes
-# an interrupted sweep; set FORCE=1 to redo them. Extra arguments go to every
-# `ner-eval evaluate` call. For example, a quick smoke test:
+# an interrupted sweep; set FORCE=1 to redo them. Set SAVE=1 to also save each model
+# to $RESULTS/models/. Extra arguments go to every `ner-eval evaluate` call. For
+# example, a quick smoke test:
 #
 #   RESULTS=results/smoke METHODS="bert modernbert" scripts/run_all.sh \
 #       -o max_train=2000 -o epochs=1 --max-eval 1000
@@ -15,6 +16,8 @@ set -uo pipefail
 RESULTS=${RESULTS:-results}
 METHODS=${METHODS:-"memorize bert roberta modernbert ettin"}
 LEVELS=${LEVELS:-"coarse fine"}
+save=()
+[[ -n ${SAVE:-} ]] && save=(--save "$RESULTS/models")
 
 mkdir -p "$RESULTS/logs"
 failed=()
@@ -30,7 +33,7 @@ for m in $METHODS; do
     rm -f "$out"
     echo "$(date '+%F %T') start $m/$lvl"
     # keep going if one run fails so a long sweep isn't lost
-    if ! uv run ner-eval evaluate "$m" "$lvl" --out "$out" "$@" 2>"$log"; then
+    if ! uv run ner-eval evaluate "$m" "$lvl" --out "$out" "${save[@]}" "$@" 2>"$log"; then
       echo "FAILED $m/$lvl; see $log"
       failed+=("$m/$lvl")
     fi

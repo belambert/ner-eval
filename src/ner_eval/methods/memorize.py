@@ -1,6 +1,9 @@
 """Lexicon baseline: tag token sequences seen as entities in training."""
 
+import json
 from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Self
 
 from ner_eval.data import Sentence
 from ner_eval.metrics import spans
@@ -24,6 +27,20 @@ class Memorize:
 
     def predict(self, sents: list[list[str]]) -> list[list[str]]:
         return [self._tag(toks) for toks in sents]
+
+    def save(self, path: Path) -> None:
+        path.mkdir(parents=True, exist_ok=True)
+        lex = [[list(k), t] for k, t in self.lex.items()]
+        (path / "lexicon.json").write_text(json.dumps(lex))
+
+    @classmethod
+    def load(cls, path: str) -> Self:
+        """Load a lexicon saved by `save` from a local directory."""
+        m = cls()
+        lex = json.loads((Path(path) / "lexicon.json").read_text())
+        m.lex = {tuple(k): t for k, t in lex}
+        m.max_len = max(map(len, m.lex), default=0)
+        return m
 
     def _tag(self, toks: list[str]) -> list[str]:
         tags = ["O"] * len(toks)

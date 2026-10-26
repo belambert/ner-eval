@@ -2,7 +2,9 @@
 
 import random
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from pathlib import Path
+from typing import Self
 
 import torch
 from tqdm import tqdm
@@ -91,6 +93,25 @@ class Transformer:
                     if w is not None:
                         out[i][w] = self.labels[label]
         return out
+
+    def save(self, path: Path) -> None:
+        """Save the fine-tuned model and tokenizer, with this tagger's options in the config."""
+        self.net.config.ner_eval = {
+            k: v for k, v in asdict(self).items() if k != "device"
+        }
+        self.net.save_pretrained(path)
+        self.tok.save_pretrained(path)
+
+    @classmethod
+    def load(cls, path: str, device: str | None = None) -> Self:
+        """Load a tagger saved by `save` from a local directory or Hugging Face repo."""
+        net = AutoModelForTokenClassification.from_pretrained(path)
+        t = cls(**net.config.ner_eval | dict(device=device))
+        t.dev = torch.device(device or default_device())
+        t.net = net.to(t.dev)
+        t.tok = AutoTokenizer.from_pretrained(path)
+        t.labels = [net.config.id2label[i] for i in range(net.config.num_labels)]
+        return t
 
     def _encode(self, words: list[str]) -> tuple[list[int], list[int | None]]:
         """Tokenize space-joined words; return ids and, per subword, its word if it's the first subword."""
