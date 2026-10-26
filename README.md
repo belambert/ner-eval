@@ -1,160 +1,87 @@
 # ner-eval
 
-A harness for comparing named entity recognition methods on recent multilingual
-benchmarks. It currently supports Universal NER v2 and OpenNER 1.0.
+A harness for comparing named entity recognition methods on [Few-NERD], a large,
+manually annotated English NER dataset built from Wikipedia. Few-NERD has 8 coarse and
+66 fine-grained entity types. It was introduced in [Few-NERD: A Few-shot Named Entity
+Recognition Dataset][paper] (Ding et al., ACL 2021).
 
-## Datasets
+[Few-NERD]: https://ningding97.github.io/fewnerd/
+[paper]: https://aclanthology.org/2021.acl-long.248/
 
-| Source             | Id prefix               | Contents                                                               |
-| ------------------ | ----------------------- | ---------------------------------------------------------------------- |
-| [Universal NER v2] | `uner/`                 | 31 UD treebanks with PER/LOC/ORG annotations; 14 of them are test-only |
-| [OpenNER 1.0]      | `openner-core_types/`   | 36 corpora in 52 languages, mapped to PER/LOC/ORG                      |
-| [OpenNER 1.0]      | `openner-standardized/` | The same corpora with their original (standardized) entity types       |
+## Dataset
 
-[Universal NER v2]: https://www.universalner.org/
-[OpenNER 1.0]: https://github.com/bltlab/open-ner
+The harness uses Few-NERD's supervised setting with its official splits. Each method
+is evaluated at two label granularities, which act as the dataset ids:
 
-UNER ids use the UD treebank code, for example `uner/en_ewt` or `uner/nno_norne`. The
-UNER files come from the `UniversalNER` GitHub org, not the Hugging Face copy, which
-only has v1 and depends on a loading script. A few UNER treebanks (hr_set, sr_set,
-sl_ssj) still contain `OTH` tags. These are mapped to `O` when loaded, since the
-benchmark scores only PER, LOC, and ORG.
+| Id       | Labels                        |
+| -------- | ----------------------------- |
+| `coarse` | 8 types, e.g. `person`        |
+| `fine`   | 66 types, e.g. `person-actor` |
 
-OpenNER comes from GitHub release `v0.9.0`, the version that matches the paper. Some
-UNER treebanks also appear in OpenNER, with OpenNER's own splits and fixes, so don't
-count them twice when you aggregate results. Each OpenNER corpus has its own license,
-and some don't allow commercial use.
+| Split | Sentences | Tokens    | Entities |
+| ----- | --------- | --------- | -------- |
+| train | 131,767   | 3,227,563 | 340,387  |
+| dev   | 18,824    | 463,214   | 48,770   |
+| test  | 37,648    | 921,118   | 96,902   |
 
-The [tag inventory](#tag-inventory) below lists the entity types in every dataset.
+The data comes from the [Hugging Face copy] (`DFKI-SLT/few-nerd`), since the original
+download link no longer works. It's licensed CC BY-SA 4.0.
+
+[Hugging Face copy]: https://huggingface.co/datasets/DFKI-SLT/few-nerd
+
+Few-NERD uses IO tags, with no B-/I- prefixes, so adjacent entities of the same type
+can't be told apart. The loader converts IO to BIO by treating each run of the same
+tag as one entity. Entity counts are therefore slightly lower than the paper's.
+
+Few-NERD's `inter` and `intra` settings aren't supported. Their test sets use entity
+types that never appear in training, and they're meant for episodic few-shot
+evaluation.
 
 ## Usage
 
-Install the project and download the data into `./data`. Set `NER_EVAL_DATA` to use a
-different directory, and set `GITHUB_TOKEN` if you hit the GitHub API rate limit.
+Install the project and download the data into `./data/few-nerd`. Set `NER_EVAL_DATA`
+to use a different directory.
 
     uv sync
-    uv run ner-eval download                 # all sources
-    uv run ner-eval download openner --variant standardized
+    uv run ner-eval download
     uv run ner-eval list
 
-Evaluate a method on the test split of every dataset, or of specific ones:
+Train a method on the train split and evaluate it on test (or `--split dev`):
 
-    uv run ner-eval evaluate memorize
-    uv run ner-eval evaluate memorize uner/en_ewt uner/el_gdt --json
-
-Test-only datasets need training data from somewhere else. Use `--train-on` for
-cross-lingual or cross-domain transfer:
-
-    uv run ner-eval evaluate memorize uner/ko_pud uner/ja_pud --train-on uner/en_ewt
+    uv run ner-eval evaluate memorize            # coarse and fine
+    uv run ner-eval evaluate memorize fine --json
 
 Scores are exact-match, span-level micro precision, recall, and F1, following
 conlleval conventions.
 
 ## Methods
 
-| Name       | Description                                                            |
-| ---------- | ---------------------------------------------------------------------- |
-| `memorize` | Lexicon baseline that tags the longest entity strings seen in training |
+| Name       | Description                                                            | Coarse F1 | Fine F1 |
+| ---------- | ---------------------------------------------------------------------- | --------- | ------- |
+| `memorize` | Lexicon baseline that tags the longest entity strings seen in training | 0.342     | 0.298   |
 
 To add a method, write a class with `fit(train: list[Sentence])` and
 `predict(sents: list[list[str]]) -> list[list[str]]`, then register it in
 `METHODS` in `src/ner_eval/methods/__init__.py`.
+
+## Tag Inventory
+
+This table is generated by `uv run ner-eval tags`. Mention counts are summed across
+all splits, after the IO-to-BIO conversion.
+
+| Coarse type  | Mentions | Fine types (mentions)                                                                                                                                                                                                              |
+| ------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| art          | 21,008   | broadcastprogram (3,149), film (4,283), music (5,360), other (3,036), painting (331), writtenart (4,849)                                                                                                                           |
+| building     | 25,092   | airport (1,814), hospital (1,760), hotel (1,411), library (1,727), other (12,798), restaurant (1,156), sportsfacility (2,032), theater (2,394)                                                                                     |
+| event        | 20,204   | attack/battle/war/militaryconflict (5,272), disaster (1,073), election (838), other (4,588), protest (746), sportsevent (7,687)                                                                                                    |
+| location     | 136,351  | GPE (102,635), bodiesofwater (5,975), island (3,217), mountain (3,328), other (10,565), park (2,144), road/railway/highway/transit (8,487)                                                                                         |
+| organization | 95,674   | company (19,663), education (10,766), government/governmentagency (7,432), media/newspaper (5,972), other (22,074), politicalparty (5,159), religion (3,675), showorganization (3,888), sportsleague (4,444), sportsteam (12,601)  |
+| other        | 48,146   | astronomything (3,673), award (4,790), biologything (8,777), chemicalthing (5,210), currency (3,721), disease (4,065), educationaldegree (1,903), god (2,676), language (4,055), law (2,434), livingthing (4,598), medical (2,244) |
+| person       | 108,557  | actor (8,167), artist/author (17,616), athlete (14,865), director (3,014), other (43,708), politician (14,055), scholar (3,676), soldier (3,456)                                                                                   |
+| product      | 31,027   | airplane (3,842), car (3,638), food (2,270), game (2,238), other (8,040), ship (1,995), software (4,393), train (1,653), weapon (2,958)                                                                                            |
 
 ## Development
 
     uv run pytest
     uv run black . && uv run isort .
     uv run mypy src
-
-## Tag Inventory
-
-These tables are generated by `uv run ner-eval tags`. Rerun it after the data
-changes. All datasets use BIO (IOB2) tags.
-
-### Universal NER
-
-Every UNER treebank uses PER, LOC, and ORG. The counts are entity mentions summed
-across all splits.
-
-| Dataset             | Splits         | PER  | LOC  | ORG  |
-| ------------------- | -------------- | ---- | ---- | ---- |
-| `uner/ceb_gja`      | test           | 42   | 6    | 1    |
-| `uner/cs_pud`       | test           | 412  | 386  | 210  |
-| `uner/da_ddt`       | train/dev/test | 1588 | 1079 | 1187 |
-| `uner/de_pud`       | test           | 418  | 429  | 192  |
-| `uner/el_gdt`       | train/dev/test | 509  | 946  | 1032 |
-| `uner/en_ewt`       | train/dev/test | 3666 | 3428 | 1982 |
-| `uner/en_pud`       | test           | 414  | 426  | 235  |
-| `uner/he_htb`       | train/dev/test | 2499 | 1656 | 2731 |
-| `uner/hr_set`       | train/dev/test | 3224 | 4066 | 3593 |
-| `uner/id_csui`      | train/test     | 285  | 403  | 817  |
-| `uner/id_gsd`       | train/dev/test | 3124 | 4799 | 1880 |
-| `uner/id_pud`       | test           | 409  | 522  | 179  |
-| `uner/ja_pud`       | test           | 416  | 540  | 194  |
-| `uner/ko_pud`       | test           | 414  | 469  | 289  |
-| `uner/nno_norne`    | train/dev/test | 5128 | 3512 | 3716 |
-| `uner/nob_norne`    | train/dev/test | 5245 | 3482 | 4032 |
-| `uner/pt_bosque`    | train/dev/test | 3926 | 3156 | 3635 |
-| `uner/pt_pud`       | test           | 413  | 488  | 198  |
-| `uner/qaf_arabizi`  | train/dev/test | 988  | 465  | 265  |
-| `uner/ro_legalnero` | test           | 896  | 1978 | 6160 |
-| `uner/ru_pud`       | test           | 414  | 346  | 276  |
-| `uner/sk_snk`       | train/dev/test | 3092 | 903  | 263  |
-| `uner/sl_ssj`       | train/dev/test | 3910 | 3045 | 1969 |
-| `uner/sr_set`       | train/dev/test | 1881 | 2739 | 1993 |
-| `uner/sv_lines`     | train/dev/test | 1549 | 389  | 167  |
-| `uner/sv_pud`       | test           | 425  | 442  | 162  |
-| `uner/sv_talbanken` | train/dev/test | 296  | 641  | 249  |
-| `uner/tl_trg`       | test           | 19   | 4    | 0    |
-| `uner/tl_ugnayan`   | test           | 2    | 31   | 0    |
-| `uner/zh_gsd`       | train/dev/test | 2599 | 3742 | 1372 |
-| `uner/zh_gsdsimp`   | train/dev/test | 2598 | 3662 | 1374 |
-| `uner/zh_pud`       | test           | 473  | 512  | 154  |
-
-### OpenNER (Standardized)
-
-The `standardized` variant keeps each corpus's original types, with their names
-standardized. Languages that share a type set are combined into one row. A `-DERIV`
-suffix marks words derived from a name (e.g. "German"), and `-PART` marks words that
-contain a name (e.g. "Berlin-based"). In the `core_types` variant, every corpus is
-reduced to PER, LOC, and ORG.
-
-| Corpus                              | Languages                                                                                          | #  | Types                                                                                                                                                                                                                      |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------- | -- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| AnCora                              | cat                                                                                                | 4  | LOC, MISC, ORG, PER                                                                                                                                                                                                        |
-| AnCora                              | spa                                                                                                | 6  | DATE, LOC, MISC, NUM, ORG, PER                                                                                                                                                                                             |
-| AQMAR                               | ara                                                                                                | 4  | LOC, MISC, ORG, PER                                                                                                                                                                                                        |
-| ArmanPersoNER                       | fas                                                                                                | 6  | EVENT, FACILITY, LOC, ORG, PER, PRODUCT                                                                                                                                                                                    |
-| BarNER                              | bar                                                                                                | 23 | ART, ART-DERIV, ART-PART, EVENT, EVENT-DERIV, EVENT-PART, LANG, LANG-DERIV, LANG-PART, LOC, LOC-DERIV, LOC-PART, MISC, MISC-DERIV, MISC-PART, ORG, ORG-DERIV, ORG-PART, PER, PER-DERIV, PER-PART, RELIGION, RELIGION-DERIV |
-| CONLL02                             | nld, spa                                                                                           | 4  | LOC, MISC, ORG, PER                                                                                                                                                                                                        |
-| DaNE                                | dan                                                                                                | 4  | LOC, MISC, ORG, PER                                                                                                                                                                                                        |
-| EIEC                                | eus                                                                                                | 4  | LOC, MISC, ORG, PER                                                                                                                                                                                                        |
-| elNER                               | ell                                                                                                | 18 | ART, CARDINAL, DATE, EVENT, FACILITY, GPE, LANG, LAW, LOC, MONEY, NORP, ORDINAL, ORG, PER, PERCENT, PRODUCT, QUANTITY, TIME                                                                                                |
-| EverestNER                          | nep                                                                                                | 5  | DATE, EVENT, LOC, ORG, PER                                                                                                                                                                                                 |
-| GermEval                            | deu                                                                                                | 12 | LOC, LOC-DERIV, LOC-PART, MISC, MISC-DERIV, MISC-PART, ORG, ORG-DERIV, ORG-PART, PER, PER-DERIV, PER-PART                                                                                                                  |
-| HiNER                               | hin                                                                                                | 11 | FESTIVAL, GAME, LANG, LITERATURE, LOC, MISC, NUM, ORG, PER, RELIGION, TIME                                                                                                                                                 |
-| hr500k                              | hrv                                                                                                | 5  | LOC, MISC, ORG, PER, PER-DERIV                                                                                                                                                                                             |
-| Japanese_GSD                        | jap                                                                                                | 22 | ART, CARDINAL, DATE, EVENT, FACILITY, GPE, LANG, LAW, LOC, MONEY, MOVEMENT, NORP, ORDINAL, ORG, PER, PERCENT, PET_NAME, PHONE, PRODUCT, QUANTITY, TIME, TITLE_AFFIX                                                        |
-| KazNERD                             | kaz                                                                                                | 25 | ADAGE, ART, CARDINAL, CONTACT, DATE, DISEASE, EVENT, FACILITY, GPE, LANG, LAW, LOC, MISC, MONEY, NON_HUMAN, NORP, ORDINAL, ORG, PER, PERCENTAGE, POSITION, PRODUCT, PROJECT, QUANTITY, TIME                                |
-| KIND                                | ita                                                                                                | 3  | LOC, ORG, PER                                                                                                                                                                                                              |
-| L3Cube_MahaNER                      | mar                                                                                                | 7  | DATE, DESIGNATION, LOC, MEASURE, ORG, PER, TIME                                                                                                                                                                            |
-| MasakhaNER                          | amh, hau, ibo, kin, lug, luo, pcm, swa, wol, yor                                                   | 4  | DATE, LOC, ORG, PER                                                                                                                                                                                                        |
-| MasakhaNER_2.0                      | bam, bbj, ewe, fon, hau, ibo, kin, lug, luo, mos, nya, pcm, sna, swa, tsn, twi, wol, xho, yor, zul | 4  | DATE, LOC, ORG, PER                                                                                                                                                                                                        |
-| NEMO_SPMRL                          | heb                                                                                                | 9  | ART, EVENT, FACILITY, GPE, LANG, LOC, ORG, PER, PRODUCT                                                                                                                                                                    |
-| NEMO_UD                             | heb                                                                                                | 9  | ART, EVENT, FACILITY, GPE, LANG, LOC, ORG, PER, PRODUCT                                                                                                                                                                    |
-| NorNE                               | nno, nob                                                                                           | 9  | DERIV, EVENT, GPE-LOC, GPE-ORG, LOC, MISC, ORG, PER, PRODUCT                                                                                                                                                               |
-| RONEC                               | ron                                                                                                | 15 | ART, DATETIME, EVENT, FACILITY, GPE, LANG, LOC, MONEY, NORP, NUM, ORDINAL, ORG, PER, PERIOD, QUANTITY                                                                                                                      |
-| SLI_Galician_Corpora                | glg                                                                                                | 4  | LOC, MISC, ORG, PER                                                                                                                                                                                                        |
-| ssj500k                             | slv                                                                                                | 5  | LOC, MISC, ORG, PER, PER-DERIV                                                                                                                                                                                             |
-| ThaiNNER                            | tha                                                                                                | 10 | ART, DATE, EVENT, FACILITY, LOC, MISC, NORP, NUM, ORG, PER                                                                                                                                                                 |
-| TurkuNLP                            | fin                                                                                                | 6  | DATE, EVENT, LOC, ORG, PER, PRODUCT                                                                                                                                                                                        |
-| Tweebank                            | eng                                                                                                | 4  | LOC, MISC, ORG, PER                                                                                                                                                                                                        |
-| UNER_Chinese_GSD                    | cmn                                                                                                | 3  | LOC, ORG, PER                                                                                                                                                                                                              |
-| UNER_Chinese_GSDSIMP                | cmn                                                                                                | 3  | LOC, ORG, PER                                                                                                                                                                                                              |
-| UNER_English_EWT                    | eng                                                                                                | 3  | LOC, ORG, PER                                                                                                                                                                                                              |
-| UNER_Maghrebi_Arabic_French-Arabizi | arq                                                                                                | 3  | LOC, ORG, PER                                                                                                                                                                                                              |
-| UNER_Portuguese-Bosque              | por                                                                                                | 3  | LOC, ORG, PER                                                                                                                                                                                                              |
-| UNER_Slovak_SNK                     | slk                                                                                                | 3  | LOC, ORG, PER                                                                                                                                                                                                              |
-| UNER_Swedish_Talkbanken             | swe                                                                                                | 3  | LOC, ORG, PER                                                                                                                                                                                                              |
-| WikiGoldSK                          | slk                                                                                                | 4  | LOC, MISC, ORG, PER                                                                                                                                                                                                        |
-| WNUT17                              | eng                                                                                                | 6  | CORPORATION, CREATIVE_WORK, GROUP, LOC, PER, PRODUCT                                                                                                                                                                       |

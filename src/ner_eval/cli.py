@@ -16,10 +16,7 @@ app = typer.Typer(no_args_is_help=True)
 def evaluate(
     method: str,
     datasets: Annotated[
-        list[str] | None, typer.Argument(help="Dataset ids; default all.")
-    ] = None,
-    train_on: Annotated[
-        str | None, typer.Option(help="Train on this dataset instead.")
+        list[str] | None, typer.Argument(help="coarse and/or fine; default both.")
     ] = None,
     split: str = "test",
     as_json: Annotated[bool, typer.Option("--json")] = False,
@@ -29,20 +26,15 @@ def evaluate(
     rows = []
     for ds in datasets or data.list_datasets():
         splits = data.load(ds)
-        train = data.load(train_on)["train"] if train_on else splits.get("train")
-        if train is None or split not in splits:
-            typer.echo(f"skip {ds}: missing train or {split} split", err=True)
-            continue
-
         model = METHODS[method]()
-        model.fit(train)
+        model.fit(splits["train"])
+
         gold = splits[split]
-        s = score([x.tags for x in gold], model.predict([x.tokens for x in gold]))[
-            "ALL"
-        ]
+        pred = model.predict([x.tokens for x in gold])
+        s = score([x.tags for x in gold], pred)["ALL"]
         rows.append(dict(dataset=ds, p=s.p, r=s.r, f1=s.f1, tp=s.tp, fp=s.fp, fn=s.fn))
         if not as_json:
-            typer.echo(f"{ds:<50} P={s.p:.3f} R={s.r:.3f} F1={s.f1:.3f}")
+            typer.echo(f"{ds:<6} P={s.p:.3f} R={s.r:.3f} F1={s.f1:.3f}")
 
     if as_json:
         typer.echo(json.dumps(rows, indent=2))
@@ -53,24 +45,16 @@ def list_() -> None:
     """List downloaded datasets with sentence counts per split."""
     for ds in data.list_datasets():
         counts = " ".join(f"{s}={len(x)}" for s, x in data.load(ds).items())
-        typer.echo(f"{ds:<50} {counts}")
+        typer.echo(f"{ds:<6} {counts}")
 
 
 @app.command()
 def tags() -> None:
-    """Print entity-type inventories as Markdown tables (as embedded in the README)."""
-    typer.echo(inventory.uner_table())
-    typer.echo()
-    typer.echo(inventory.openner_table())
+    """Print the entity-type inventory as a Markdown table (as embedded in the README)."""
+    typer.echo(inventory.type_table())
 
 
 @app.command()
-def download(
-    source: Annotated[str, typer.Argument(help="uner, openner, or all")] = "all",
-    variant: Annotated[str, typer.Option(help="OpenNER variant.")] = "core_types",
-) -> None:
-    """Download datasets into $NER_EVAL_DATA (default ./data)."""
-    if source in ("uner", "all"):
-        data.download_uner()
-    if source in ("openner", "all"):
-        data.download_openner(variant)
+def download() -> None:
+    """Download Few-NERD into $NER_EVAL_DATA (default ./data/few-nerd)."""
+    data.download()

@@ -1,13 +1,14 @@
 [project]
 name = "ner-eval"
 version = "0.1.0"
-description = "Evaluate NER methods on Universal NER v2, OpenNER 1.0, and other recent benchmarks."
+description = "Evaluate NER methods on Few-NERD."
 readme = "README.md"
 authors = [
     { name = "Ben Lambert", email = "blambert@gmail.com" }
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "pyarrow>=26.0.0",
     "typer>=0.27.3",
 ]
 
@@ -23,6 +24,7 @@ dev = [
     "black>=26.10.1",
     "isort>=9.0.2",
     "mypy>=2.4.0",
+    "pyarrow-stubs>=20.0.0.20260819",
     "pytest>=9.1.1",
 ]
 
