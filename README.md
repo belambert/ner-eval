@@ -57,6 +57,14 @@ evaluation split, and `--out` to append results to a JSONL file:
     uv run ner-eval evaluate bert coarse -o max_train=2000 -o epochs=1 --max-eval 1000
     uv run ner-eval evaluate modernbert --out results/runs.jsonl
 
+Use `--save DIR` to keep each trained model in `DIR/few-nerd-<method>-<level>`, and
+`--load DIR` to evaluate saved models without retraining. For encoders, `DIR` can also
+be a Hugging Face user or org that the models were pushed to:
+
+    uv run ner-eval evaluate bert coarse --save results/models
+    uv run ner-eval evaluate bert coarse --load results/models
+    uv run ner-eval evaluate bert coarse --load <hf-user>
+
 Scores are exact-match, span-level micro precision, recall, and F1, following
 conlleval conventions.
 
@@ -66,11 +74,18 @@ To train and evaluate every method on both label sets, run the sweep script:
 
 Each run writes `results/<method>-<level>.jsonl` and logs training progress to
 `results/logs/`. Finished runs are skipped, so rerunning resumes an interrupted sweep;
-set `FORCE=1` to redo them. `RESULTS`, `METHODS`, and `LEVELS` override the output
-directory, methods, and label sets. Extra arguments are passed to `evaluate`:
+set `FORCE=1` to redo them. Set `SAVE=1` to also save each model to `results/models/`.
+`RESULTS`, `METHODS`, and `LEVELS` override the output directory, methods, and label
+sets. Extra arguments are passed to `evaluate`:
 
     RESULTS=results/smoke METHODS="bert modernbert" scripts/run_all.sh \
         -o max_train=2000 -o epochs=1 --max-eval 1000
+
+To push the saved encoders to private Hugging Face repos:
+
+    for d in results/models/*/; do
+        [[ -f $d/config.json ]] && uv run hf upload "<hf-user>/$(basename $d)" "$d" . --private
+    done
 
 ## Methods
 

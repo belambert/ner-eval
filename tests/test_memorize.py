@@ -14,3 +14,11 @@ def test_memorize_longest_match():
     assert model.predict([["the", "New", "York", "Times", "and", "York"]]) == [
         ["O", "B-ORG", "I-ORG", "I-ORG", "O", "B-PER"]
     ]
+
+
+def test_memorize_save_load(tmp_path):
+    model = Memorize()
+    model.fit([Sentence(["New", "York"], ["B-LOC", "I-LOC"])])
+    model.save(tmp_path / "m")
+    loaded = Memorize.load(str(tmp_path / "m"))
+    assert (loaded.lex, loaded.max_len) == (model.lex, model.max_len)

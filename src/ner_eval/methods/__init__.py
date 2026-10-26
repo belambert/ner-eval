@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from functools import partial
+from pathlib import Path
 from typing import Protocol
 
 from ner_eval.data import Sentence
@@ -13,6 +14,8 @@ class Tagger(Protocol):
     def fit(self, train: list[Sentence]) -> None: ...
 
     def predict(self, sents: list[list[str]]) -> list[list[str]]: ...
+
+    def save(self, path: Path) -> None: ...
 
 
 ENCODERS = {
@@ -31,3 +34,10 @@ METHODS: dict[str, Callable[..., Tagger]] = {
     "transformer": Transformer,
     **{name: partial(Transformer, model=m) for name, m in ENCODERS.items()},
 }
+
+
+def load(method: str, path: str) -> Tagger:
+    """Load a saved tagger for METHOD; encoders load from a local dir or Hugging Face repo."""
+    # encoder methods are partials of Transformer, which records its own options when saved
+    f = METHODS[method]
+    return getattr(f, "func", f).load(path)

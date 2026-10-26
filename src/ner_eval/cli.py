@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 import typer
 
-from ner_eval import data, inventory
+from ner_eval import data, inventory, methods
 from ner_eval.methods import METHODS
 from ner_eval.metrics import score
 
@@ -31,21 +31,41 @@ def evaluate(
     out: Annotated[
         Path | None, typer.Option(help="Append results to this JSONL file.")
     ] = None,
+    save: Annotated[
+        Path | None,
+        typer.Option(help="Save each trained model to SAVE/few-nerd-METHOD-DATASET."),
+    ] = None,
+    load: Annotated[
+        str | None,
+        typer.Option(
+            help="Load models from LOAD/few-nerd-METHOD-DATASET instead of training; "
+            "LOAD is a local directory or a Hugging Face user or org."
+        ),
+    ] = None,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
-    """Train METHOD on each dataset's train split and score it on SPLIT."""
+    """Train METHOD on each dataset's train split (or load it) and score it on SPLIT."""
     assert method in METHODS, f"unknown method {method!r}; choose from {list(METHODS)}"
     opts = dict(_parse_opt(o) for o in opt or [])
+    assert not (load and opts), "options can't be applied to a loaded model"
     rows = []
     for ds in datasets or data.list_datasets():
         splits = data.load(ds)
-        model = METHODS[method](**opts)
-        model.fit(splits["train"])
+        name = f"few-nerd-{method}-{ds}"
+        if load:
+            model = methods.load(method, f"{load}/{name}")
+        else:
+            model = METHODS[method](**opts)
+            model.fit(splits["train"])
+        if save:
+            model.save(save / name)
 
         gold = splits[split][:max_eval]
         pred = model.predict([x.tokens for x in gold])
         s = score([x.tags for x in gold], pred)["ALL"]
         row = dict(method=method, opts=opts, dataset=ds, split=split, n=len(gold))
+        if load:
+            row["ckpt"] = f"{load}/{name}"
         rows.append(row | dict(p=s.p, r=s.r, f1=s.f1, tp=s.tp, fp=s.fp, fn=s.fn))
         if out:
             with out.open("a") as f:
