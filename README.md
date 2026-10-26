@@ -51,14 +51,40 @@ Train a method on the train split and evaluate it on test (or `--split dev`):
     uv run ner-eval evaluate memorize            # coarse and fine
     uv run ner-eval evaluate memorize fine --json
 
+Pass method options with `-o key=value`. Use `--max-eval` to score a subset of the
+evaluation split, and `--out` to append results to a JSONL file:
+
+    uv run ner-eval evaluate bert coarse -o max_train=2000 -o epochs=1 --max-eval 1000
+    uv run ner-eval evaluate modernbert --out results/runs.jsonl
+
 Scores are exact-match, span-level micro precision, recall, and F1, following
 conlleval conventions.
 
 ## Methods
 
-| Name       | Description                                                            | Coarse F1 | Fine F1 |
-| ---------- | ---------------------------------------------------------------------- | --------- | ------- |
-| `memorize` | Lexicon baseline that tags the longest entity strings seen in training | 0.342     | 0.298   |
+| Name          | Description                                                            | Coarse F1 | Fine F1 |
+| ------------- | ---------------------------------------------------------------------- | --------- | ------- |
+| `memorize`    | Lexicon baseline that tags the longest entity strings seen in training | 0.342     | 0.298   |
+| `bert`        | Fine-tuned `google-bert/bert-base-cased`                               |           |         |
+| `roberta`     | Fine-tuned `FacebookAI/roberta-base`                                   |           |         |
+| `modernbert`  | Fine-tuned `answerdotai/ModernBERT-base`                               |           |         |
+| `ettin`       | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               |           |         |
+| `transformer` | Fine-tuned encoder of your choice, set with `-o model=<hf-id>`         |           |         |
+
+The encoder methods fine-tune a Hugging Face model with a linear tagging head. Each
+word's label is predicted from its first subword. Words are joined with spaces before
+tokenization rather than passed pre-split, because some BPE tokenizers (e.g.
+ModernBERT's) would otherwise drop the spaces they were trained with. Training runs
+on CUDA, MPS, or CPU, whichever is available, with bf16 autocast on CUDA. The main
+options and their defaults are `epochs=3`, `lr=5e-5`, `batch_size=32`, `max_len=256`
+(subwords; words past it are tagged `O`), `warmup=0.1`, `max_train` (subsample the
+training set), `device`, and `seed=0`.
+
+On an M4 Pro (MPS), base-size models train at about 90 sentences per second, so one
+epoch on the full training set takes about 25 minutes.
+
+DeBERTa-v3 (`microsoft/deberta-v3-base`) isn't included yet: its loss becomes NaN
+after the first optimizer step, on both CPU and MPS.
 
 To add a method, write a class with `fit(train: list[Sentence])` and
 `predict(sents: list[list[str]]) -> list[list[str]]`, then register it in
