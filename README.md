@@ -77,11 +77,19 @@ directory, methods, and label sets. Extra arguments are passed to `evaluate`:
 | Name          | Description                                                            | Coarse F1 | Fine F1 |
 | ------------- | ---------------------------------------------------------------------- | --------- | ------- |
 | `memorize`    | Lexicon baseline that tags the longest entity strings seen in training | 0.342     | 0.298   |
-| `bert`        | Fine-tuned `google-bert/bert-base-cased`                               |           |         |
-| `roberta`     | Fine-tuned `FacebookAI/roberta-base`                                   |           |         |
-| `modernbert`  | Fine-tuned `answerdotai/ModernBERT-base`                               |           |         |
-| `ettin`       | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               |           |         |
+| `bert`        | Fine-tuned `google-bert/bert-base-cased`                               | 0.785     | 0.672   |
+| `roberta`     | Fine-tuned `FacebookAI/roberta-base`                                   | 0.790     | 0.677   |
+| `modernbert`  | Fine-tuned `answerdotai/ModernBERT-base`                               | 0.779     | 0.663   |
+| `ettin-17m`   | Fine-tuned `jhu-clsp/ettin-encoder-17m`                                | 0.748     | 0.603   |
+| `ettin-32m`   | Fine-tuned `jhu-clsp/ettin-encoder-32m`                                | 0.764     | 0.631   |
+| `ettin-68m`   | Fine-tuned `jhu-clsp/ettin-encoder-68m`                                | 0.776     | 0.651   |
+| `ettin`       | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 0.779     | 0.658   |
+| `ettin-400m`  | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 0.786     | 0.670   |
+| `ettin-1b`    | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 |           |         |
 | `transformer` | Fine-tuned encoder of your choice, set with `-o model=<hf-id>`         |           |         |
+
+Scores are span-level micro F1 on the test split from a single run with the default
+options (`seed=0`). For comparison, the [paper] reports a fine F1 of 0.671 for its BERT baseline.
 
 The encoder methods fine-tune a Hugging Face model with a linear tagging head. Each
 word's label is predicted from its first subword. Words are joined with spaces before
@@ -93,7 +101,9 @@ options and their defaults are `epochs=3`, `lr=5e-5`, `batch_size=32`, `max_len=
 training set), `device`, and `seed=0`.
 
 On an M4 Pro (MPS), base-size models train at about 90 sentences per second, so one
-epoch on the full training set takes about 25 minutes.
+epoch on the full training set takes about 25 minutes. On an NVIDIA GB10 (CUDA), they
+train at about 450 sentences per second, so a full 3-epoch run takes 15 to 25 minutes;
+`ettin-400m` takes about an hour and `ettin-1b` about 2.5 hours.
 
 DeBERTa-v3 (`microsoft/deberta-v3-base`) isn't included yet: its loss becomes NaN
 after the first optimizer step, on both CPU and MPS.

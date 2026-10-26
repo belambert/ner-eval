@@ -20,6 +20,10 @@ ENCODERS = {
     "roberta": "FacebookAI/roberta-base",
     "modernbert": "answerdotai/ModernBERT-base",
     "ettin": "jhu-clsp/ettin-encoder-150m",
+    **{
+        f"ettin-{s}": f"jhu-clsp/ettin-encoder-{s}"
+        for s in ["17m", "32m", "68m", "400m", "1b"]
+    },
 }
 
 METHODS: dict[str, Callable[..., Tagger]] = {
