@@ -60,6 +60,19 @@ evaluation split, and `--out` to append results to a JSONL file:
 Scores are exact-match, span-level micro precision, recall, and F1, following
 conlleval conventions.
 
+To train and evaluate every method on both label sets, run the sweep script. On a Mac,
+`caffeinate -i` keeps the machine awake for the hours it takes:
+
+    caffeinate -i scripts/run_all.sh
+
+Each run writes `results/<method>-<level>.jsonl` and logs training progress to
+`results/logs/`. Finished runs are skipped, so rerunning resumes an interrupted sweep;
+set `FORCE=1` to redo them. `RESULTS`, `METHODS`, and `LEVELS` override the output
+directory, methods, and label sets. Extra arguments are passed to `evaluate`:
+
+    RESULTS=results/smoke METHODS="bert modernbert" scripts/run_all.sh \
+        -o max_train=2000 -o epochs=1 --max-eval 1000
+
 ## Methods
 
 | Name          | Description                                                            | Coarse F1 | Fine F1 |
