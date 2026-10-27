@@ -1,23 +1,24 @@
 # ner-eval
 
 A harness for training and comparing named entity recognition methods, from a lexicon
-baseline to fine-tuned encoders and decoders, on several English NER datasets. Each
-method is trained on a dataset's train split and scored on its test split.
+baseline to fine-tuned encoders and decoders, on English NER datasets. Each method is
+trained on a dataset's train split and scored on its test split.
 
 ## Datasets
 
 | Id           | Corpus     | Types                          | Train sentences | Details                                  |
 | ------------ | ---------- | ------------------------------ | --------------- | ---------------------------------------- |
-| `coarse`     | Few-NERD   | 8, e.g. `person`               | 131,767         | [docs/few-nerd.md](docs/few-nerd.md)     |
-| `fine`       | Few-NERD   | 66, e.g. `person-actor`        | 131,767         | [docs/few-nerd.md](docs/few-nerd.md)     |
 | `cleanconll` | CleanCoNLL | 4: `PER`, `LOC`, `ORG`, `MISC` | 13,957          | [docs/cleanconll.md](docs/cleanconll.md) |
 
-Each doc describes the dataset and has its results and analysis.
+Each doc describes the dataset and has its results and analysis. The harness used to
+support [Few-NERD]; its code was removed, but [docs/few-nerd.md](docs/few-nerd.md) keeps
+its results and error analysis.
+
+[Few-NERD]: https://ningding97.github.io/fewnerd/
 
 ## Usage
 
-Install the project and download the data into `./data` (or set `NER_EVAL_DATA`).
-`download` fetches every corpus by default; pass `few-nerd` or `cleanconll` for one.
+Install the project and download the data into `./data` (or set `NER_EVAL_DATA`):
 
     uv sync
     uv run ner-eval download
@@ -35,7 +36,7 @@ evaluation split, and `--out` to append results to a JSONL file:
     uv run ner-eval evaluate modernbert --out results/runs.jsonl
 
 Use `--save DIR` to keep each trained model in `DIR/<corpus>-<method>-<dataset>` (e.g.
-`few-nerd-bert-coarse` or `conll-bert-cleanconll`), and
+`conll-bert-cleanconll`), and
 `--load DIR` to evaluate saved models without retraining. For transformer methods,
 `DIR` can also be a Hugging Face user or org that the models were pushed to:
 
