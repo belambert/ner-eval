@@ -1,8 +1,9 @@
 name: pages
 
 on:
-  push:
-    branches: [main]
+  # manual only; the page includes CoNLL-03's Reuters text, which isn't freely licensed
+  # push:
+  #   branches: [main]
   workflow_dispatch:
 
 permissions:
