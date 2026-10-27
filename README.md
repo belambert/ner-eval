@@ -3,12 +3,16 @@
 A harness for comparing named entity recognition methods on [Few-NERD], a large,
 manually annotated English NER dataset built from Wikipedia. Few-NERD has 8 coarse and
 66 fine-grained entity types. It was introduced in [Few-NERD: A Few-shot Named Entity
-Recognition Dataset][paper] (Ding et al., ACL 2021).
+Recognition Dataset][paper] (Ding et al., ACL 2021). It also supports [CleanCoNLL], a
+relabeled CoNLL-03 with the original 4 types and far fewer annotation errors.
 
 [Few-NERD]: https://ningding97.github.io/fewnerd/
 [paper]: https://aclanthology.org/2021.acl-long.248/
+[CleanCoNLL]: https://github.com/flairNLP/CleanCoNLL
 
-## Dataset
+## Datasets
+
+### Few-NERD
 
 The harness uses Few-NERD's supervised setting with its official splits. Each method
 is evaluated at two label granularities, which act as the dataset ids:
@@ -37,10 +41,28 @@ Few-NERD's `inter` and `intra` settings aren't supported. Their test sets use en
 types that never appear in training, and they're meant for episodic few-shot
 evaluation.
 
+### CleanCoNLL
+
+[CleanCoNLL] ([Rücker and Akbik, EMNLP 2023][cc-paper]) relabels the CoNLL-03 English
+news corpus, fixing about 7% of its labels, with types `PER`, `LOC`, `ORG`, and `MISC`
+in BIO. Its dataset id is `cleanconll`. CleanCoNLL only publishes its labels, so
+`download` builds the data with the release's script, which fetches the original
+CoNLL-03 text and patches it. This needs `git`, `wget`, `unzip`, and `patch`. CleanCoNLL
+also fixes some sentence splits and tokens, so its counts differ slightly from CoNLL-03.
+
+[cc-paper]: https://aclanthology.org/2023.emnlp-main.533/
+
+| Split | Sentences | Tokens  | Entities |
+| ----- | --------- | ------- | -------- |
+| train | 13,957    | 203,657 | 23,566   |
+| dev   | 3,233     | 51,383  | 5,966    |
+| test  | 3,427     | 46,504  | 5,725    |
+
 ## Usage
 
-Install the project and download the data into `./data/few-nerd`. Set `NER_EVAL_DATA`
-to use a different directory.
+Install the project and download the data into `./data/few-nerd` and
+`./data/cleanconll` (or just one, e.g. `download cleanconll`). Set `NER_EVAL_DATA` to
+use a different directory than `./data`.
 
     uv sync
     uv run ner-eval download
@@ -48,7 +70,7 @@ to use a different directory.
 
 Train a method on the train split and evaluate it on test (or `--split dev`):
 
-    uv run ner-eval evaluate memorize            # coarse and fine
+    uv run ner-eval evaluate memorize            # every downloaded dataset
     uv run ner-eval evaluate memorize fine --json
 
 Pass method options with `-o key=value`. Use `--max-eval` to score a subset of the
@@ -57,7 +79,8 @@ evaluation split, and `--out` to append results to a JSONL file:
     uv run ner-eval evaluate bert coarse -o max_train=2000 -o epochs=1 --max-eval 1000
     uv run ner-eval evaluate modernbert --out results/runs.jsonl
 
-Use `--save DIR` to keep each trained model in `DIR/few-nerd-<method>-<level>`, and
+Use `--save DIR` to keep each trained model in `DIR/<corpus>-<method>-<dataset>` (e.g.
+`few-nerd-bert-coarse` or `conll-bert-cleanconll`), and
 `--load DIR` to evaluate saved models without retraining. For transformer methods,
 `DIR` can also be a Hugging Face user or org that the models were pushed to:
 
@@ -76,8 +99,8 @@ span can be matched only once. The default of 1.0 is exact match. Combined with
     uv run ner-eval evaluate bert --load <hf-user> --overlap 0.5
 
 To rescore without rerunning the model at all, save its predictions with `--preds DIR`.
-This writes `DIR/few-nerd-<method>-<level>-<split>.jsonl`, one JSON list of predicted
-tags per sentence, in split order. `rescore` reads the label set and split from the file
+This writes `DIR/<corpus>-<method>-<dataset>-<split>.jsonl`, one JSON list of predicted
+tags per sentence, in split order. `rescore` reads the dataset and split from the file
 name, loads the gold tags, and prints the same scores as `evaluate` (`--json` too):
 
     uv run ner-eval evaluate memorize --preds results/preds
@@ -90,8 +113,8 @@ To train and evaluate every method on both label sets, run the sweep script:
 Each run writes `results/<method>-<level>.jsonl`, saves its predictions to
 `results/preds/` for `rescore`, and logs training progress to `results/logs/`. Finished
 runs are skipped, so rerunning resumes an interrupted sweep; set `FORCE=1` to redo them. Set `SAVE=1` to also save each model to `results/models/`.
-`RESULTS`, `METHODS`, and `LEVELS` override the output directory, methods, and label
-sets. Extra arguments are passed to `evaluate`:
+`RESULTS`, `METHODS`, and `LEVELS` override the output directory, methods, and datasets
+(`LEVELS=cleanconll` for CleanCoNLL). Extra arguments are passed to `evaluate`:
 
     RESULTS=results/smoke METHODS="bert modernbert" scripts/run_all.sh \
         -o max_train=2000 -o epochs=1 --max-eval 1000

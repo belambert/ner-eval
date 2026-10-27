@@ -26,7 +26,8 @@ Overlap = Annotated[
 def evaluate(
     method: str,
     datasets: Annotated[
-        list[str] | None, typer.Argument(help="coarse and/or fine; default both.")
+        list[str] | None,
+        typer.Argument(help="coarse, fine, and/or cleanconll; default all downloaded."),
     ] = None,
     split: str = "test",
     opt: Annotated[
@@ -41,19 +42,19 @@ def evaluate(
     ] = None,
     save: Annotated[
         Path | None,
-        typer.Option(help="Save each trained model to SAVE/few-nerd-METHOD-DATASET."),
+        typer.Option(help="Save each trained model to SAVE/CORPUS-METHOD-DATASET."),
     ] = None,
     load: Annotated[
         str | None,
         typer.Option(
-            help="Load models from LOAD/few-nerd-METHOD-DATASET instead of training; "
+            help="Load models from LOAD/CORPUS-METHOD-DATASET instead of training; "
             "LOAD is a local directory or a Hugging Face user or org."
         ),
     ] = None,
     preds: Annotated[
         Path | None,
         typer.Option(
-            help="Write predicted tags to PREDS/few-nerd-METHOD-DATASET-SPLIT.jsonl "
+            help="Write predicted tags to PREDS/CORPUS-METHOD-DATASET-SPLIT.jsonl "
             "for `rescore`."
         ),
     ] = None,
@@ -67,7 +68,7 @@ def evaluate(
     rows = []
     for ds in datasets or data.list_datasets():
         splits = data.load(ds)
-        name = f"few-nerd-{method}-{ds}"
+        name = data.run_name(method, ds)
         if load:
             model = methods.load(method, f"{load}/{name}")
         else:
@@ -93,7 +94,7 @@ def evaluate(
         )
         if load:
             row["ckpt"] = f"{load}/{name}"
-        rows.append(row | _score(f"{ds:<6}", gold, pred, overlap, as_json))
+        rows.append(row | _score(f"{ds:<10}", gold, pred, overlap, as_json))
         if out:
             with out.open("a") as f:
                 f.write(json.dumps(rows[-1]) + "\n")
@@ -114,7 +115,7 @@ def rescore(
     """Score saved predictions against gold tags without rerunning the model."""
     rows = []
     for path in files:
-        # the dataset and split are the last two parts of few-nerd-METHOD-DATASET-SPLIT
+        # the dataset and split are the last two parts of CORPUS-METHOD-DATASET-SPLIT
         *_, ds, split = path.stem.rsplit("-", 2)
         pred = [json.loads(line) for line in path.open()]
         # predictions cover the first N sentences when evaluate ran with --max-eval
@@ -134,7 +135,7 @@ def list_() -> None:
     """List downloaded datasets with sentence counts per split."""
     for ds in data.list_datasets():
         counts = " ".join(f"{s}={len(x)}" for s, x in data.load(ds).items())
-        typer.echo(f"{ds:<6} {counts}")
+        typer.echo(f"{ds:<10} {counts}")
 
 
 @app.command()
@@ -144,9 +145,15 @@ def tags() -> None:
 
 
 @app.command()
-def download() -> None:
-    """Download Few-NERD into $NER_EVAL_DATA (default ./data/few-nerd)."""
-    data.download()
+def download(
+    corpora: Annotated[
+        list[str] | None,
+        typer.Argument(help="few-nerd and/or cleanconll; default both."),
+    ] = None,
+) -> None:
+    """Download the data into $NER_EVAL_DATA (default ./data)."""
+    for c in corpora or ["few-nerd", "cleanconll"]:
+        data.download(c)
 
 
 def _score(
