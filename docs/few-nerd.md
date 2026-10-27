@@ -38,29 +38,29 @@ evaluation.
 
 ## Results
 
-| Method             | Coarse F1 | Fine F1 | Coarse 50% F1 | Fine 50% F1 |
-| ------------------ | --------- | ------- | ------------- | ----------- |
-| `memorize`         | 0.342     | 0.298   | 0.442         | 0.364       |
-| `bert`             | 0.785     | 0.672   | 0.843         | 0.728       |
-| `roberta`          | 0.790     | 0.677   | 0.845         | 0.730       |
-| `roberta-large`    | 0.795     | 0.683   | 0.849         | 0.736       |
-| `modernbert`       | 0.780     | 0.661   | 0.839         | 0.721       |
-| `modernbert-large` | 0.786     | 0.670   | 0.843         | 0.729       |
-| `deberta`          | 0.792     | 0.677   | 0.846         | 0.730       |
-| `deberta-large`    | 0.794     | 0.684   | 0.848         | 0.736       |
-| `ettin-17m`        | 0.749     | 0.604   | 0.815         | 0.675       |
-| `ettin-32m`        | 0.765     | 0.632   | 0.825         | 0.699       |
-| `ettin-68m`        | 0.776     | 0.651   | 0.834         | 0.712       |
-| `ettin`            | 0.779     | 0.659   | 0.839         | 0.720       |
-| `ettin-400m`       | 0.785     | 0.669   | 0.842         | 0.729       |
-| `ettin-1b`         | 0.789     | 0.673   | 0.845         | 0.731       |
-| `ettin-dec-17m`    | 0.621     | 0.443   | 0.721         | 0.551       |
-| `ettin-dec-32m`    | 0.642     | 0.474   | 0.738         | 0.577       |
-| `ettin-dec-68m`    | 0.665     | 0.508   | 0.757         | 0.606       |
-| `ettin-dec-150m`   | 0.671     | 0.518   | 0.762         | 0.616       |
-| `ettin-dec-400m`   | 0.684     | 0.535   | 0.772         | 0.631       |
-| `ettin-dec-1b`     | 0.689     | –       | 0.775         | –           |
-| `qwen3-0.6b`       | 0.680     | 0.529   | 0.769         | 0.625       |
+| Method             | Coarse F1 | Fine F1 |
+| ------------------ | --------- | ------- |
+| `memorize`         | 0.342     | 0.298   |
+| `bert`             | 0.785     | 0.672   |
+| `roberta`          | 0.790     | 0.677   |
+| `roberta-large`    | 0.795     | 0.683   |
+| `modernbert`       | 0.780     | 0.661   |
+| `modernbert-large` | 0.786     | 0.670   |
+| `deberta`          | 0.792     | 0.677   |
+| `deberta-large`    | 0.794     | 0.684   |
+| `ettin-17m`        | 0.749     | 0.604   |
+| `ettin-32m`        | 0.765     | 0.632   |
+| `ettin-68m`        | 0.776     | 0.651   |
+| `ettin`            | 0.779     | 0.659   |
+| `ettin-400m`       | 0.785     | 0.669   |
+| `ettin-1b`         | 0.789     | 0.673   |
+| `ettin-dec-17m`    | 0.621     | 0.443   |
+| `ettin-dec-32m`    | 0.642     | 0.474   |
+| `ettin-dec-68m`    | 0.665     | 0.508   |
+| `ettin-dec-150m`   | 0.671     | 0.518   |
+| `ettin-dec-400m`   | 0.684     | 0.535   |
+| `ettin-dec-1b`     | 0.689     | –       |
+| `qwen3-0.6b`       | 0.680     | 0.529   |
 
 Scores are span-level micro F1 on the test split with the default options. They're
 averaged over three seeds for `bert`, `roberta`, `modernbert`, and `ettin`, and two for
@@ -68,12 +68,6 @@ averaged over three seeds for `bert`, `roberta`, `modernbert`, and `ettin`, and 
 across seeds, by at most about 0.002 F1, so differences between methods larger than
 that are reliable. `qwen3-1.7b` and `ettin-dec-1b` on fine labels haven't been run. For
 comparison, the [paper] reports a fine F1 of 0.671 for its BERT baseline.
-
-The 50% columns also count a predicted span as correct if its token overlap with a gold
-span of the same type is at least 0.5 (`--overlap 0.5`). They're from seed 0 only.
-Accepting partial matches adds about 0.055 F1 for the encoders and about 0.09 to 0.1 for
-the decoders, which make more boundary errors since they can't see the words after an
-entity. The ranking of methods doesn't change.
 
 On an M4 Pro (MPS), base-size models train at about 90 sentences per second, so one
 epoch on the full training set takes about 25 minutes. On an NVIDIA GB10 (CUDA), they
