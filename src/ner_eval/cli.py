@@ -140,7 +140,7 @@ def list_() -> None:
 
 @app.command()
 def tags() -> None:
-    """Print the entity-type inventory as a Markdown table (as embedded in the README)."""
+    """Print the entity-type inventory as a Markdown table (as embedded in docs/few-nerd.md)."""
     typer.echo(inventory.type_table())
 
 
