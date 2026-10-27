@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
-# Train and evaluate every method on Few-NERD's coarse and fine labels (LEVELS=cleanconll
-# for CleanCoNLL).
+# Train and evaluate every method on every dataset.
 #
 # Usage: scripts/run_all.sh [evaluate options...]
 #
-# Each run writes $RESULTS/<method>-<level>.jsonl, saves its predicted tags to
+# Each run writes $RESULTS/<method>-<dataset>.jsonl, saves its predicted tags to
 # $RESULTS/preds/ for `ner-eval rescore`, and logs training progress to
-# $RESULTS/logs/<method>-<level>.log. Finished runs are skipped, so rerunning resumes
+# $RESULTS/logs/<method>-<dataset>.log. Finished runs are skipped, so rerunning resumes
 # an interrupted sweep; set FORCE=1 to redo them. Set SAVE=1 to also save each model
 # to $RESULTS/models/. Extra arguments go to every `ner-eval evaluate` call. For
 # example, a quick smoke test:
@@ -17,27 +16,27 @@ set -uo pipefail
 
 RESULTS=${RESULTS:-results}
 METHODS=${METHODS:-"memorize bert roberta modernbert ettin"}
-LEVELS=${LEVELS:-"coarse fine"}
+DATASETS=${DATASETS:-"coarse fine cleanconll"}
 save=()
 [[ -n ${SAVE:-} ]] && save=(--save "$RESULTS/models")
 
 mkdir -p "$RESULTS/logs"
 failed=()
 for m in $METHODS; do
-  for lvl in $LEVELS; do
-    out="$RESULTS/$m-$lvl.jsonl"
-    log="$RESULTS/logs/$m-$lvl.log"
+  for ds in $DATASETS; do
+    out="$RESULTS/$m-$ds.jsonl"
+    log="$RESULTS/logs/$m-$ds.log"
     if [[ -s $out && -z ${FORCE:-} ]]; then
-      echo "skip $m/$lvl: $out exists"
+      echo "skip $m/$ds: $out exists"
       continue
     fi
 
     rm -f "$out"
-    echo "$(date '+%F %T') start $m/$lvl"
+    echo "$(date '+%F %T') start $m/$ds"
     # keep going if one run fails so a long sweep isn't lost
-    if ! uv run ner-eval evaluate "$m" "$lvl" --out "$out" --preds "$RESULTS/preds" "${save[@]}" "$@" 2>"$log"; then
-      echo "FAILED $m/$lvl; see $log"
-      failed+=("$m/$lvl")
+    if ! uv run ner-eval evaluate "$m" "$ds" --out "$out" --preds "$RESULTS/preds" "${save[@]}" "$@" 2>"$log"; then
+      echo "FAILED $m/$ds; see $log"
+      failed+=("$m/$ds")
     fi
   done
 done

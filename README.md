@@ -1,43 +1,23 @@
 # ner-eval
 
-A harness for comparing named entity recognition methods on [Few-NERD], a large,
-manually annotated English NER dataset built from Wikipedia with 8 coarse and 66
-fine-grained entity types, and on [CleanCoNLL], a relabeled CoNLL-03 with the original
-4 types and far fewer annotation errors.
-
-[Few-NERD]: docs/few-nerd.md
-[CleanCoNLL]: https://github.com/flairNLP/CleanCoNLL
+A harness for training and comparing named entity recognition methods, from a lexicon
+baseline to fine-tuned encoders and decoders, on several English NER datasets. Each
+method is trained on a dataset's train split and scored on its test split.
 
 ## Datasets
 
-### Few-NERD
+| Id           | Corpus     | Types                          | Train sentences | Details                                  |
+| ------------ | ---------- | ------------------------------ | --------------- | ---------------------------------------- |
+| `coarse`     | Few-NERD   | 8, e.g. `person`               | 131,767         | [docs/few-nerd.md](docs/few-nerd.md)     |
+| `fine`       | Few-NERD   | 66, e.g. `person-actor`        | 131,767         | [docs/few-nerd.md](docs/few-nerd.md)     |
+| `cleanconll` | CleanCoNLL | 4: `PER`, `LOC`, `ORG`, `MISC` | 13,957          | [docs/cleanconll.md](docs/cleanconll.md) |
 
-Few-NERD's supervised setting is evaluated at two label granularities, `coarse` and
-`fine`, which act as the dataset ids. See [docs/few-nerd.md](docs/few-nerd.md) for the
-dataset, results, and error analysis.
-
-### CleanCoNLL
-
-[CleanCoNLL] ([Rücker and Akbik, EMNLP 2023][cc-paper]) relabels the CoNLL-03 English
-news corpus, fixing about 7% of its labels, with types `PER`, `LOC`, `ORG`, and `MISC`
-in BIO. Its dataset id is `cleanconll`. CleanCoNLL only publishes its labels, so
-`download` builds the data with the release's script, which fetches the original
-CoNLL-03 text and patches it. This needs `git`, `wget`, `unzip`, and `patch`. CleanCoNLL
-also fixes some sentence splits and tokens, so its counts differ slightly from CoNLL-03.
-
-[cc-paper]: https://aclanthology.org/2023.emnlp-main.533/
-
-| Split | Sentences | Tokens  | Entities |
-| ----- | --------- | ------- | -------- |
-| train | 13,957    | 203,657 | 23,566   |
-| dev   | 3,233     | 51,383  | 5,966    |
-| test  | 3,427     | 46,504  | 5,725    |
+Each doc describes the dataset and has its results and analysis.
 
 ## Usage
 
-Install the project and download the data into `./data/few-nerd` and
-`./data/cleanconll` (or just one, e.g. `download cleanconll`). Set `NER_EVAL_DATA` to
-use a different directory than `./data`.
+Install the project and download the data into `./data` (or set `NER_EVAL_DATA`).
+`download` fetches every corpus by default; pass `few-nerd` or `cleanconll` for one.
 
     uv sync
     uv run ner-eval download
@@ -46,12 +26,12 @@ use a different directory than `./data`.
 Train a method on the train split and evaluate it on test (or `--split dev`):
 
     uv run ner-eval evaluate memorize            # every downloaded dataset
-    uv run ner-eval evaluate memorize fine --json
+    uv run ner-eval evaluate memorize cleanconll --json
 
 Pass method options with `-o key=value`. Use `--max-eval` to score a subset of the
 evaluation split, and `--out` to append results to a JSONL file:
 
-    uv run ner-eval evaluate bert coarse -o max_train=2000 -o epochs=1 --max-eval 1000
+    uv run ner-eval evaluate bert cleanconll -o max_train=2000 -o epochs=1 --max-eval 1000
     uv run ner-eval evaluate modernbert --out results/runs.jsonl
 
 Use `--save DIR` to keep each trained model in `DIR/<corpus>-<method>-<dataset>` (e.g.
@@ -59,9 +39,9 @@ Use `--save DIR` to keep each trained model in `DIR/<corpus>-<method>-<dataset>`
 `--load DIR` to evaluate saved models without retraining. For transformer methods,
 `DIR` can also be a Hugging Face user or org that the models were pushed to:
 
-    uv run ner-eval evaluate bert coarse --save results/models
-    uv run ner-eval evaluate bert coarse --load results/models
-    uv run ner-eval evaluate bert coarse --load <hf-user>
+    uv run ner-eval evaluate bert cleanconll --save results/models
+    uv run ner-eval evaluate bert cleanconll --load results/models
+    uv run ner-eval evaluate bert cleanconll --load <hf-user>
 
 Scores are exact-match, span-level micro precision, recall, and F1, following
 conlleval conventions. Use `--overlap` to also accept partial matches. A predicted
@@ -81,17 +61,18 @@ name, loads the gold tags, and prints the same scores as `evaluate` (`--json` to
     uv run ner-eval evaluate memorize --preds results/preds
     uv run ner-eval rescore results/preds/*.jsonl --overlap 0.5
 
-To train and evaluate every method on both label sets, run the sweep script:
+To train and evaluate every method on every dataset, run the sweep script:
 
     scripts/run_all.sh
 
-Each run writes `results/<method>-<level>.jsonl`, saves its predictions to
+Each run writes `results/<method>-<dataset>.jsonl`, saves its predictions to
 `results/preds/` for `rescore`, and logs training progress to `results/logs/`. Finished
-runs are skipped, so rerunning resumes an interrupted sweep; set `FORCE=1` to redo them. Set `SAVE=1` to also save each model to `results/models/`.
-`RESULTS`, `METHODS`, and `LEVELS` override the output directory, methods, and datasets
-(`LEVELS=cleanconll` for CleanCoNLL). Extra arguments are passed to `evaluate`:
+runs are skipped, so rerunning resumes an interrupted sweep; set `FORCE=1` to redo them.
+Set `SAVE=1` to also save each model to `results/models/`. `RESULTS`, `METHODS`, and
+`DATASETS` override the output directory, methods, and datasets. Extra arguments are
+passed to `evaluate`:
 
-    RESULTS=results/smoke METHODS="bert modernbert" scripts/run_all.sh \
+    RESULTS=results/smoke METHODS="bert modernbert" DATASETS=cleanconll scripts/run_all.sh \
         -o max_train=2000 -o epochs=1 --max-eval 1000
 
 To push the saved transformer models to private Hugging Face repos:
@@ -128,8 +109,8 @@ To push the saved transformer models to private Hugging Face repos:
 | `qwen3-1.7b`       | Fine-tuned decoder `Qwen/Qwen3-1.7B`                                   | 1.72B  |
 | `transformer`      | Fine-tuned model of your choice, set with `-o model=<hf-id>`           |        |
 
-Params counts the fine-tuned model, including the tagging head. Results for each
-dataset are in its doc, e.g. [docs/few-nerd.md](docs/few-nerd.md#results).
+Params counts the fine-tuned model, including the tagging head, whose size varies
+slightly by dataset. Results are in each dataset's doc.
 
 The transformer methods fine-tune a Hugging Face model with a linear tagging head.
 Encoders predict each word's label from its first subword. Decoders use its last
@@ -147,16 +128,6 @@ training set), `subword=first`, `device`, and `seed=0`.
 To add a method, write a class with `fit(train: list[Sentence])` and
 `predict(sents: list[list[str]]) -> list[list[str]]`, then register it in
 `METHODS` in `src/ner_eval/methods/__init__.py`.
-
-## CleanCoNLL Changes
-
-`conll-diff` writes an HTML page of every entity label CleanCoNLL changed from CoNLL-03,
-shown sentence by sentence with filters by split, kind of change, and type. It needs
-`download cleanconll`, which keeps the original CoNLL-03 labels alongside CleanCoNLL's.
-The `pages` workflow can build it and publish it to GitHub Pages, but only runs when
-triggered manually, since the page includes CoNLL-03's Reuters text.
-
-    uv run ner-eval conll-diff site/index.html
 
 ## Development
 
