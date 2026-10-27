@@ -153,7 +153,8 @@ To add a method, write a class with `fit(train: list[Sentence])` and
 `conll-diff` writes an HTML page of every entity label CleanCoNLL changed from CoNLL-03,
 shown sentence by sentence with filters by split, kind of change, and type. It needs
 `download cleanconll`, which keeps the original CoNLL-03 labels alongside CleanCoNLL's.
-The `pages` workflow builds it and publishes it to GitHub Pages.
+The `pages` workflow can build it and publish it to GitHub Pages, but only runs when
+triggered manually, since the page includes CoNLL-03's Reuters text.
 
     uv run ner-eval conll-diff site/index.html
 
