@@ -5,12 +5,28 @@ import json
 from collections import Counter
 from importlib.resources import files
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
+
+import typer
 
 from ner_eval.data import CONLL_DIR, SPLITS
 from ner_eval.metrics import Span, spans
 
 Doc = list[list[tuple[str, str]]]
+
+
+def main() -> None:
+    """Run the `conll-diff` command."""
+    typer.run(_cli)
+
+
+def _cli(
+    out: Annotated[Path, typer.Argument(help="HTML file to write.")] = Path(
+        "site/index.html"
+    ),
+) -> None:
+    """Write an HTML page of the entity labels CleanCoNLL changed from CoNLL-03."""
+    write_page(out)
 
 
 def write_page(out: Path) -> None:

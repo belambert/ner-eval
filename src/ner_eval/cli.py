@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 import typer
 
-from ner_eval import conll_diff, data, methods
+from ner_eval import data, methods
 from ner_eval.methods import METHODS
 from ner_eval.metrics import score
 
@@ -136,16 +136,6 @@ def list_() -> None:
     for ds in data.list_datasets():
         counts = " ".join(f"{s}={len(x)}" for s, x in data.load(ds).items())
         typer.echo(f"{ds:<10} {counts}")
-
-
-@app.command("conll-diff")
-def conll_diff_(
-    out: Annotated[Path, typer.Argument(help="HTML file to write.")] = Path(
-        "site/index.html"
-    ),
-) -> None:
-    """Write an HTML page of the entity labels CleanCoNLL changed from CoNLL-03."""
-    conll_diff.write_page(out)
 
 
 @app.command()

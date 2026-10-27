@@ -60,13 +60,13 @@ here. Decoders still trail the encoders by about 0.1 F1.
 
 ## Changes From CoNLL-03
 
-`conll-diff` writes an HTML page of every entity label CleanCoNLL changed from CoNLL-03,
+The separate `conll-diff` command writes an HTML page of every entity label CleanCoNLL changed from CoNLL-03,
 shown sentence by sentence with filters by split, kind of change, and type. It needs
 `download`, which keeps the original CoNLL-03 labels alongside CleanCoNLL's.
 The `pages` workflow can build it and publish it to GitHub Pages, but only runs when
 triggered manually, since the page includes CoNLL-03's Reuters text.
 
-    uv run ner-eval conll-diff site/index.html
+    uv run conll-diff site/index.html
 
 Of 2,891 changed entities, 1,861 change only type, mostly `LOC` to `ORG` (1,275), as
 when country or city names stand for sports teams. Another 642 change boundaries, 340
