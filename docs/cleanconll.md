@@ -9,7 +9,7 @@ BIO. Its dataset id is `cleanconll`.
 
 ## Dataset
 
-CleanCoNLL only publishes its labels, so `download cleanconll` builds the data with the
+CleanCoNLL only publishes its labels, so `download` builds the data with the
 release's script, which fetches the original CoNLL-03 text and patches it. This needs
 `git`, `wget`, `unzip`, and `patch`. CleanCoNLL also fixes some sentence splits and
 tokens, so its counts differ slightly from CoNLL-03's.
@@ -62,7 +62,7 @@ here. Decoders still trail the encoders by about 0.1 F1.
 
 `conll-diff` writes an HTML page of every entity label CleanCoNLL changed from CoNLL-03,
 shown sentence by sentence with filters by split, kind of change, and type. It needs
-`download cleanconll`, which keeps the original CoNLL-03 labels alongside CleanCoNLL's.
+`download`, which keeps the original CoNLL-03 labels alongside CleanCoNLL's.
 The `pages` workflow can build it and publish it to GitHub Pages, but only runs when
 triggered manually, since the page includes CoNLL-03's Reuters text.
 
