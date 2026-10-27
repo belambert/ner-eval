@@ -112,5 +112,7 @@ def build_cleanconll() -> None:
             ["bash", "create_cleanconll_from_conll03.sh"], cwd=repo, check=True
         )
         CONLL_DIR.mkdir(parents=True, exist_ok=True)
-        for s in SPLITS:
+        for s, orig in zip(SPLITS, ("train", "valid", "test")):
             shutil.copy(repo / f"data/cleanconll/cleanconll.{s}", CONLL_DIR)
+            # keep the original labels too, for `conll-diff`
+            shutil.copy(repo / f"data/conll03/{orig}.txt", CONLL_DIR / f"conll03.{s}")
