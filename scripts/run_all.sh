@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Train and evaluate every method on Few-NERD's coarse and fine labels.
+# Train and evaluate every method on Few-NERD's coarse and fine labels (LEVELS=cleanconll
+# for CleanCoNLL).
 #
 # Usage: scripts/run_all.sh [evaluate options...]
 #
