@@ -66,7 +66,14 @@ be a Hugging Face user or org that the models were pushed to:
     uv run ner-eval evaluate bert coarse --load <hf-user>
 
 Scores are exact-match, span-level micro precision, recall, and F1, following
-conlleval conventions.
+conlleval conventions. Use `--overlap` to also accept partial matches. A predicted
+span then counts as correct if its type matches a gold span and its token overlap
+with that span (intersection over union) is at least the given fraction. Each gold
+span can be matched only once. The default of 1.0 is exact match. Combined with
+`--load`, this rescores saved models without retraining:
+
+    uv run ner-eval evaluate memorize --overlap 0.5
+    uv run ner-eval evaluate bert --load <hf-user> --overlap 0.5
 
 To train and evaluate every method on both label sets, run the sweep script:
 
