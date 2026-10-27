@@ -58,8 +58,8 @@ evaluation split, and `--out` to append results to a JSONL file:
     uv run ner-eval evaluate modernbert --out results/runs.jsonl
 
 Use `--save DIR` to keep each trained model in `DIR/few-nerd-<method>-<level>`, and
-`--load DIR` to evaluate saved models without retraining. For encoders, `DIR` can also
-be a Hugging Face user or org that the models were pushed to:
+`--load DIR` to evaluate saved models without retraining. For transformer methods,
+`DIR` can also be a Hugging Face user or org that the models were pushed to:
 
     uv run ner-eval evaluate bert coarse --save results/models
     uv run ner-eval evaluate bert coarse --load results/models
@@ -81,7 +81,7 @@ sets. Extra arguments are passed to `evaluate`:
     RESULTS=results/smoke METHODS="bert modernbert" scripts/run_all.sh \
         -o max_train=2000 -o epochs=1 --max-eval 1000
 
-To push the saved encoders to private Hugging Face repos:
+To push the saved transformer models to private Hugging Face repos:
 
     for d in results/models/*/; do
         [[ -f $d/config.json ]] && uv run hf upload "<hf-user>/$(basename $d)" "$d" . --private
@@ -89,19 +89,31 @@ To push the saved encoders to private Hugging Face repos:
 
 ## Methods
 
-| Name          | Description                                                            | Params | Coarse F1 | Fine F1 |
-| ------------- | ---------------------------------------------------------------------- | ------ | --------- | ------- |
-| `memorize`    | Lexicon baseline that tags the longest entity strings seen in training | –      | 0.342     | 0.298   |
-| `bert`        | Fine-tuned `google-bert/bert-base-cased`                               | 108M   | 0.785     | 0.672   |
-| `roberta`     | Fine-tuned `FacebookAI/roberta-base`                                   | 124M   | 0.790     | 0.677   |
-| `modernbert`  | Fine-tuned `answerdotai/ModernBERT-base`                               | 150M   | 0.780     | 0.661   |
-| `ettin-17m`   | Fine-tuned `jhu-clsp/ettin-encoder-17m`                                | 17M    | 0.749     | 0.604   |
-| `ettin-32m`   | Fine-tuned `jhu-clsp/ettin-encoder-32m`                                | 32M    | 0.765     | 0.632   |
-| `ettin-68m`   | Fine-tuned `jhu-clsp/ettin-encoder-68m`                                | 68M    | 0.776     | 0.651   |
-| `ettin`       | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 150M   | 0.779     | 0.659   |
-| `ettin-400m`  | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 396M   | 0.785     | 0.669   |
-| `ettin-1b`    | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 | 1.03B  | 0.789     | 0.673   |
-| `transformer` | Fine-tuned encoder of your choice, set with `-o model=<hf-id>`         |        |           |         |
+| Name               | Description                                                            | Params | Coarse F1 | Fine F1 |
+| ------------------ | ---------------------------------------------------------------------- | ------ | --------- | ------- |
+| `memorize`         | Lexicon baseline that tags the longest entity strings seen in training | –      | 0.342     | 0.298   |
+| `bert`             | Fine-tuned `google-bert/bert-base-cased`                               | 108M   | 0.785     | 0.672   |
+| `roberta`          | Fine-tuned `FacebookAI/roberta-base`                                   | 124M   | 0.790     | 0.677   |
+| `roberta-large`    | Fine-tuned `FacebookAI/roberta-large`                                  |        |           |         |
+| `modernbert`       | Fine-tuned `answerdotai/ModernBERT-base`                               | 150M   | 0.780     | 0.661   |
+| `modernbert-large` | Fine-tuned `answerdotai/ModernBERT-large`                              |        |           |         |
+| `deberta`          | Fine-tuned `microsoft/deberta-v3-base`                                 |        |           |         |
+| `deberta-large`    | Fine-tuned `microsoft/deberta-v3-large`                                |        |           |         |
+| `ettin-17m`        | Fine-tuned `jhu-clsp/ettin-encoder-17m`                                | 17M    | 0.749     | 0.604   |
+| `ettin-32m`        | Fine-tuned `jhu-clsp/ettin-encoder-32m`                                | 32M    | 0.765     | 0.632   |
+| `ettin-68m`        | Fine-tuned `jhu-clsp/ettin-encoder-68m`                                | 68M    | 0.776     | 0.651   |
+| `ettin`            | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 150M   | 0.779     | 0.659   |
+| `ettin-400m`       | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 396M   | 0.785     | 0.669   |
+| `ettin-1b`         | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 | 1.03B  | 0.789     | 0.673   |
+| `ettin-dec-17m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-17m`                        |        |           |         |
+| `ettin-dec-32m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-32m`                        |        |           |         |
+| `ettin-dec-68m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-68m`                        |        |           |         |
+| `ettin-dec-150m`   | Fine-tuned decoder `jhu-clsp/ettin-decoder-150m`                       |        |           |         |
+| `ettin-dec-400m`   | Fine-tuned decoder `jhu-clsp/ettin-decoder-400m`                       |        |           |         |
+| `ettin-dec-1b`     | Fine-tuned decoder `jhu-clsp/ettin-decoder-1b`                         |        |           |         |
+| `qwen3-0.6b`       | Fine-tuned decoder `Qwen/Qwen3-0.6B`                                   |        |           |         |
+| `qwen3-1.7b`       | Fine-tuned decoder `Qwen/Qwen3-1.7B`                                   |        |           |         |
+| `transformer`      | Fine-tuned model of your choice, set with `-o model=<hf-id>`           |        |           |         |
 
 Scores are span-level micro F1 on the test split with the default options, averaged
 over up to three seeds; `ettin-1b`, and `ettin-400m` on fine labels, have one so far.
@@ -110,22 +122,23 @@ between methods larger than that are reliable. Params counts the fine-tuned mode
 including the tagging head. For comparison, the [paper] reports a fine F1 of 0.671
 for its BERT baseline.
 
-The encoder methods fine-tune a Hugging Face model with a linear tagging head. Each
-word's label is predicted from its first subword. Words are joined with spaces before
-tokenization rather than passed pre-split, because some BPE tokenizers (e.g.
-ModernBERT's) would otherwise drop the spaces they were trained with. Training runs
-on CUDA, MPS, or CPU, whichever is available, with bf16 autocast on CUDA. The main
+The transformer methods fine-tune a Hugging Face model with a linear tagging head.
+Encoders predict each word's label from its first subword. Decoders use its last
+subword (`subword=last`), since causal attention only lets a subword see the text
+before it. Their attention stays causal, so a word's label can't depend on the words
+after it. The Qwen3 models use `lr=2e-5`, a more typical rate for full fine-tuning of
+LLMs. Words are joined with spaces before tokenization rather than passed pre-split,
+because some BPE tokenizers (e.g. ModernBERT's) would otherwise drop the spaces they
+were trained with. Training runs on CUDA, MPS, or CPU, whichever is available, with
+fp32 weights (whatever the checkpoint's dtype) and bf16 autocast on CUDA. The main
 options and their defaults are `epochs=3`, `lr=5e-5`, `batch_size=32`, `max_len=256`
 (subwords; words past it are tagged `O`), `warmup=0.1`, `max_train` (subsample the
-training set), `device`, and `seed=0`.
+training set), `subword=first`, `device`, and `seed=0`.
 
 On an M4 Pro (MPS), base-size models train at about 90 sentences per second, so one
 epoch on the full training set takes about 25 minutes. On an NVIDIA GB10 (CUDA), they
 train at about 450 sentences per second, so a full 3-epoch run takes 15 to 25 minutes;
 `ettin-400m` takes about an hour and `ettin-1b` about 2.5 hours.
-
-DeBERTa-v3 (`microsoft/deberta-v3-base`) isn't included yet: its loss becomes NaN
-after the first optimizer step, on both CPU and MPS.
 
 To add a method, write a class with `fit(train: list[Sentence])` and
 `predict(sents: list[list[str]]) -> list[list[str]]`, then register it in

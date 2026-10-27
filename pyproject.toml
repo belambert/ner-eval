@@ -8,7 +8,9 @@ authors = [
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "protobuf>=7.36.2",
     "pyarrow>=26.0.0",
+    "sentencepiece>=0.2.2",
     "torch>=2.14.1",
     "tqdm>=4.70.1",
     "transformers>=5.20.2",
