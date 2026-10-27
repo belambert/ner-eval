@@ -42,6 +42,7 @@ def test_read_parquet(tmp_path):
 
 def test_list_and_load(tmp_path, monkeypatch):
     monkeypatch.setattr(data, "DATA_DIR", tmp_path)
+    monkeypatch.setattr(data, "CONLL_DIR", tmp_path / "cleanconll")
     assert data.list_datasets() == []
 
     row = {"tokens": ["Rome"], "ner_tags": [1], "fine_ner_tags": [1]}
