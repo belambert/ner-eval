@@ -89,25 +89,26 @@ To push the saved encoders to private Hugging Face repos:
 
 ## Methods
 
-| Name          | Description                                                            | Params | Seeds | Coarse F1     | Fine F1       |
-| ------------- | ---------------------------------------------------------------------- | ------ | ----- | ------------- | ------------- |
-| `memorize`    | Lexicon baseline that tags the longest entity strings seen in training | –      | 1     | 0.342         | 0.298         |
-| `bert`        | Fine-tuned `google-bert/bert-base-cased`                               | 108M   | 3     | 0.785 ± 0.000 | 0.672 ± 0.001 |
-| `roberta`     | Fine-tuned `FacebookAI/roberta-base`                                   | 124M   | 3     | 0.790 ± 0.001 | 0.677 ± 0.001 |
-| `modernbert`  | Fine-tuned `answerdotai/ModernBERT-base`                               | 150M   | 3     | 0.780 ± 0.001 | 0.661 ± 0.001 |
-| `ettin-17m`   | Fine-tuned `jhu-clsp/ettin-encoder-17m`                                | 17M    | 2     | 0.749 ± 0.002 | 0.604 ± 0.001 |
-| `ettin-32m`   | Fine-tuned `jhu-clsp/ettin-encoder-32m`                                | 32M    | 2     | 0.765 ± 0.001 | 0.632 ± 0.000 |
-| `ettin-68m`   | Fine-tuned `jhu-clsp/ettin-encoder-68m`                                | 68M    | 2     | 0.776 ± 0.000 | 0.651 ± 0.000 |
-| `ettin`       | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 150M   | 3     | 0.779 ± 0.001 | 0.659 ± 0.001 |
-| `ettin-400m`  | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 396M   | 2 / 1 | 0.785 ± 0.002 | 0.669         |
-| `ettin-1b`    | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 | 1.03B  | 1     | 0.789         | 0.673         |
-| `transformer` | Fine-tuned encoder of your choice, set with `-o model=<hf-id>`         |        |       |               |               |
+| Name          | Description                                                            | Params | Coarse F1 | Fine F1 |
+| ------------- | ---------------------------------------------------------------------- | ------ | --------- | ------- |
+| `memorize`    | Lexicon baseline that tags the longest entity strings seen in training | –      | 0.342     | 0.298   |
+| `bert`        | Fine-tuned `google-bert/bert-base-cased`                               | 108M   | 0.785     | 0.672   |
+| `roberta`     | Fine-tuned `FacebookAI/roberta-base`                                   | 124M   | 0.790     | 0.677   |
+| `modernbert`  | Fine-tuned `answerdotai/ModernBERT-base`                               | 150M   | 0.780     | 0.661   |
+| `ettin-17m`   | Fine-tuned `jhu-clsp/ettin-encoder-17m`                                | 17M    | 0.749     | 0.604   |
+| `ettin-32m`   | Fine-tuned `jhu-clsp/ettin-encoder-32m`                                | 32M    | 0.765     | 0.632   |
+| `ettin-68m`   | Fine-tuned `jhu-clsp/ettin-encoder-68m`                                | 68M    | 0.776     | 0.651   |
+| `ettin`       | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 150M   | 0.779     | 0.659   |
+| `ettin-400m`  | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 396M   | 0.785     | 0.669   |
+| `ettin-1b`    | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 | 1.03B  | 0.789     | 0.673   |
+| `transformer` | Fine-tuned encoder of your choice, set with `-o model=<hf-id>`         |        |           |         |
 
-Scores are span-level micro F1 on the test split with the default options, given as
-the mean ± standard deviation over seeds 0, 1, and 2 where more than one has finished
-(Seeds lists the coarse / fine counts when they differ). An entry of ± 0.000 means
-the spread is under 0.0005. Params counts the fine-tuned model, including the tagging
-head. For comparison, the [paper] reports a fine F1 of 0.671 for its BERT baseline.
+Scores are span-level micro F1 on the test split with the default options, averaged
+over up to three seeds; `ettin-1b`, and `ettin-400m` on fine labels, have one so far.
+Scores vary very little across seeds, by at most about 0.002 F1, so differences
+between methods larger than that are reliable. Params counts the fine-tuned model,
+including the tagging head. For comparison, the [paper] reports a fine F1 of 0.671
+for its BERT baseline.
 
 The encoder methods fine-tune a Hugging Face model with a linear tagging head. Each
 word's label is predicted from its first subword. Words are joined with spaces before
