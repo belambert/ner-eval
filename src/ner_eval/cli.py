@@ -42,6 +42,13 @@ def evaluate(
             "LOAD is a local directory or a Hugging Face user or org."
         ),
     ] = None,
+    overlap: Annotated[
+        float,
+        typer.Option(
+            help="Count a predicted span as correct if its token IoU with a gold span "
+            "of the same type is at least this; 1.0 is exact match."
+        ),
+    ] = 1.0,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Train METHOD on each dataset's train split (or load it) and score it on SPLIT."""
@@ -62,8 +69,15 @@ def evaluate(
 
         gold = splits[split][:max_eval]
         pred = model.predict([x.tokens for x in gold])
-        s = score([x.tags for x in gold], pred)["ALL"]
-        row = dict(method=method, opts=opts, dataset=ds, split=split, n=len(gold))
+        s = score([x.tags for x in gold], pred, overlap)["ALL"]
+        row = dict(
+            method=method,
+            opts=opts,
+            dataset=ds,
+            split=split,
+            n=len(gold),
+            overlap=overlap,
+        )
         if load:
             row["ckpt"] = f"{load}/{name}"
         rows.append(row | dict(p=s.p, r=s.r, f1=s.f1, tp=s.tp, fp=s.fp, fn=s.fn))
