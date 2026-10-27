@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 import typer
 
-from ner_eval import conll_diff, data, inventory, methods
+from ner_eval import conll_diff, data, methods
 from ner_eval.methods import METHODS
 from ner_eval.metrics import score
 
@@ -27,7 +27,7 @@ def evaluate(
     method: str,
     datasets: Annotated[
         list[str] | None,
-        typer.Argument(help="coarse, fine, and/or cleanconll; default all downloaded."),
+        typer.Argument(help="Dataset ids, e.g. cleanconll; default all downloaded."),
     ] = None,
     split: str = "test",
     opt: Annotated[
@@ -138,12 +138,6 @@ def list_() -> None:
         typer.echo(f"{ds:<10} {counts}")
 
 
-@app.command()
-def tags() -> None:
-    """Print the entity-type inventory as a Markdown table (as embedded in docs/few-nerd.md)."""
-    typer.echo(inventory.type_table())
-
-
 @app.command("conll-diff")
 def conll_diff_(
     out: Annotated[Path, typer.Argument(help="HTML file to write.")] = Path(
@@ -155,15 +149,9 @@ def conll_diff_(
 
 
 @app.command()
-def download(
-    corpora: Annotated[
-        list[str] | None,
-        typer.Argument(help="few-nerd and/or cleanconll; default both."),
-    ] = None,
-) -> None:
+def download() -> None:
     """Download the data into $NER_EVAL_DATA (default ./data)."""
-    for c in corpora or ["few-nerd", "cleanconll"]:
-        data.download(c)
+    data.download()
 
 
 def _score(
