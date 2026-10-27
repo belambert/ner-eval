@@ -7,7 +7,7 @@ from typing import Annotated, Any
 
 import typer
 
-from ner_eval import data, inventory, methods
+from ner_eval import conll_diff, data, inventory, methods
 from ner_eval.methods import METHODS
 from ner_eval.metrics import score
 
@@ -142,6 +142,16 @@ def list_() -> None:
 def tags() -> None:
     """Print the entity-type inventory as a Markdown table (as embedded in the README)."""
     typer.echo(inventory.type_table())
+
+
+@app.command("conll-diff")
+def conll_diff_(
+    out: Annotated[Path, typer.Argument(help="HTML file to write.")] = Path(
+        "site/index.html"
+    ),
+) -> None:
+    """Write an HTML page of the entity labels CleanCoNLL changed from CoNLL-03."""
+    conll_diff.write_page(out)
 
 
 @app.command()

@@ -1,0 +1,238 @@
+<title>CleanCoNLL Label Diff</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Newsreader:opsz,wght@6..72,500&display=swap">
+<style>
+/* layout: wire-copy reader; summary tables up top, then a filter bar and paired before/after lines */
+:root {
+  --bg: #f6f7f8; --surface: #ffffff; --fg: #1d2329; --muted: #5d6873; --line: #d9dee3;
+  --accent: #1f5f8b; --chip: #e8edf2;
+  --per: #b4421f; --per-bg: #fbe6dc; --loc: #2f7a3b; --loc-bg: #e0f1e2;
+  --org: #2457a6; --org-bg: #e1eafa; --misc: #7c4a9e; --misc-bg: #efe4f6;
+  --display: "Newsreader", Georgia, serif;
+  --body: "IBM Plex Sans", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161a; --surface: #1a2026; --fg: #e3e8ec; --muted: #94a0ab; --line: #2c343c;
+  --accent: #7fb6dc; --chip: #252d35;
+  --per: #f0a183; --per-bg: #3a2219; --loc: #8fd29a; --loc-bg: #1b3020;
+  --org: #9dbdf2; --org-bg: #1c2840; --misc: #cfa8ea; --misc-bg: #2d2238;
+  color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --bg: #12161a; --surface: #1a2026; --fg: #e3e8ec; --muted: #94a0ab; --line: #2c343c;
+  --accent: #7fb6dc; --chip: #252d35;
+  --per: #f0a183; --per-bg: #3a2219; --loc: #8fd29a; --loc-bg: #1b3020;
+  --org: #9dbdf2; --org-bg: #1c2840; --misc: #cfa8ea; --misc-bg: #2d2238;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--body); }
+.wrap { max-width: 1040px; margin: 0 auto; padding-block: 32px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px; }
+h1 { font: 500 2.1rem/1.15 var(--display); margin: 0; text-wrap: balance; }
+h2 { font: 600 0.78rem/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+p { margin: 0; max-width: 68ch; }
+.lede { display: grid; gap: 10px; }
+.lede p { color: var(--muted); }
+a { color: var(--accent); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 12px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font-weight: 500; color: var(--muted); font-size: .85rem; }
+tbody tr:last-child td { border-bottom: 0; }
+tr.click { cursor: pointer; }
+tr.click:hover td, tr.click:focus-visible td { background: var(--chip); }
+tr.click:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.kind { font-family: var(--mono); font-size: .85rem; }
+.filters { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.group > span { font-size: .8rem; color: var(--muted); margin-right: 4px; }
+button.chip { font: 500 .85rem var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+  padding: 3px 10px; border-radius: 999px; cursor: pointer; }
+button.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+input, select { font: .9rem var(--body); padding: 4px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--fg); }
+input { width: 14rem; max-width: 100%; }
+.status { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; color: var(--muted); font-size: .9rem; }
+.pager { display: flex; gap: 6px; align-items: center; }
+.pager button { font: .85rem var(--body); padding: 3px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--fg); cursor: pointer; }
+.pager button:disabled { opacity: .4; cursor: default; }
+ol.items { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; display: grid; gap: 6px; min-width: 0; }
+.meta { font: .78rem var(--mono); color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.row > b { font: 500 .75rem var(--mono); color: var(--muted); }
+.sent { font-family: var(--mono); font-size: .88rem; line-height: 2; overflow-wrap: anywhere; }
+mark { color: inherit; padding: 1px 3px; border-radius: 3px; opacity: .55; }
+mark sub { font: 600 .62rem var(--body); margin-left: 3px; vertical-align: baseline; letter-spacing: .03em; }
+mark.chg { opacity: 1; box-shadow: inset 0 0 0 1.5px currentColor; }
+mark.PER { background: var(--per-bg); } mark.PER sub { color: var(--per); } mark.chg.PER { color: var(--per); }
+mark.LOC { background: var(--loc-bg); } mark.LOC sub { color: var(--loc); } mark.chg.LOC { color: var(--loc); }
+mark.ORG { background: var(--org-bg); } mark.ORG sub { color: var(--org); } mark.chg.ORG { color: var(--org); }
+mark.MISC { background: var(--misc-bg); } mark.MISC sub { color: var(--misc); } mark.chg.MISC { color: var(--misc); }
+mark.chg span { color: var(--fg); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: .85rem; color: var(--muted); align-items: center; }
+.empty { padding: 24px; text-align: center; color: var(--muted); }
+footer p { font-size: .85rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="lede">
+    <h1>CoNLL-03 vs. CleanCoNLL labels</h1>
+    <p><a href="https://github.com/flairNLP/CleanCoNLL">CleanCoNLL</a> (Rücker and Akbik, EMNLP 2023) relabels the
+      CoNLL-03 English news corpus. This page lines the two up sentence by sentence and shows every entity whose
+      label changed: <span id="lede-n"></span></p>
+    <div class="legend">
+      <span><mark class="PER chg"><span>Ann Lee</span><sub>PER</sub></mark> changed entity</span>
+      <span><mark class="LOC"><span>Rome</span><sub>LOC</sub></mark> unchanged entity</span>
+    </div>
+  </header>
+
+  <section class="grid2">
+    <div>
+      <h2>Changes by kind</h2>
+      <div class="tbl"><table id="kinds"></table></div>
+    </div>
+    <div>
+      <h2>Type changes, same span</h2>
+      <div class="tbl"><table id="trans"></table></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:14px">
+    <div class="filters" role="search">
+      <div class="group" id="f-split"><span>Split</span></div>
+      <div class="group" id="f-kind"><span>Change</span></div>
+      <div class="group"><span>Type</span>
+        <select id="f-type" aria-label="Entity type"></select></div>
+      <div class="group"><input id="f-q" type="search" placeholder="Search words" aria-label="Search words"></div>
+    </div>
+    <div class="status"><span id="count"></span>
+      <div class="pager"><button id="prev" type="button">Previous</button><span id="page"></span><button id="next" type="button">Next</button></div>
+    </div>
+    <ol class="items" id="items"></ol>
+  </section>
+
+  <footer><p>Spans are aligned within each document, since CleanCoNLL also fixes some tokens and sentence splits.
+    <span id="unaligned"></span> Original CoNLL-03 tags are IOB1, read with conlleval rules.
+    A boundary change is an entity whose span overlaps its replacement but doesn't match it, whether or not the type
+    also changed.</p></footer>
+</div>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+const D = JSON.parse(document.getElementById("data").textContent);
+const SPLITS = ["train", "dev", "test"], KINDS = ["type", "boundary", "added", "removed"];
+const KLABEL = { type: "Type", boundary: "Boundary", added: "Added", removed: "Removed" };
+const TYPES = ["PER", "LOC", "ORG", "MISC"];
+const fmt = n => n.toLocaleString("en-US");
+const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const st = { split: "all", kind: "all", type: "any", q: "", page: 0 };
+const PER_PAGE = 40;
+
+const total = KINDS.reduce((a, k) => a + SPLITS.reduce((b, s) => b + (D.kinds[k + "|" + s] || 0), 0), 0);
+const ents = SPLITS.reduce((a, s) => a + D.splits[s].entities_orig, 0);
+document.getElementById("lede-n").textContent =
+  `${fmt(total)} changes in ${fmt(D.sents.length)} sentences, about ${(100 * total / ents).toFixed(1)}% of CoNLL-03's ${fmt(ents)} entities.`;
+const un = SPLITS.reduce((a, s) => a + D.splits[s].unaligned, 0);
+document.getElementById("unaligned").textContent =
+  `${fmt(un)} original entities fall on tokens CleanCoNLL changed and aren't shown.`;
+
+// summary tables; rows filter the list below
+const kt = document.getElementById("kinds");
+kt.innerHTML = `<thead><tr><th>Change</th>${SPLITS.map(s => `<th>${s}</th>`).join("")}<th>Total</th></tr></thead><tbody>` +
+  KINDS.map(k => {
+    const ns = SPLITS.map(s => D.kinds[k + "|" + s] || 0);
+    return `<tr class="click" tabindex="0" data-kind="${k}"><td>${KLABEL[k]}</td>${ns.map(n => `<td>${fmt(n)}</td>`).join("")}<td>${fmt(ns.reduce((a, b) => a + b))}</td></tr>`;
+  }).join("") + "</tbody>";
+const tt = document.getElementById("trans");
+tt.innerHTML = `<thead><tr><th>CoNLL-03 → CleanCoNLL</th><th>Entities</th></tr></thead><tbody>` +
+  D.trans.slice(0, 8).map(([a, b, n]) => `<tr class="click" tabindex="0" data-t="${a}>${b}"><td class="kind">${a} → ${b}</td><td>${fmt(n)}</td></tr>`).join("") + "</tbody>";
+
+// filter controls
+function chips(id, key, vals, labels) {
+  const g = document.getElementById(id);
+  ["all", ...vals].forEach(v => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.dataset.v = v; b.id = `${id}-${v}`;
+    b.textContent = v === "all" ? "All" : (labels ? labels[v] : v);
+    b.onclick = () => { st[key] = v; st.page = 0; render(); };
+    g.appendChild(b);
+  });
+}
+chips("f-split", "split", SPLITS);
+chips("f-kind", "kind", KINDS, KLABEL);
+const sel = document.getElementById("f-type");
+sel.innerHTML = `<option value="any">Any</option>` + TYPES.map(t => `<option value="${t}">${t}</option>`).join("") +
+  D.trans.slice(0, 12).map(([a, b]) => `<option value="${a}>${b}">${a} → ${b}</option>`).join("");
+sel.onchange = () => { st.type = sel.value; st.page = 0; render(); };
+const q = document.getElementById("f-q");
+q.oninput = () => { st.q = q.value.trim().toLowerCase(); st.page = 0; render(); };
+function pick(row, set) {
+  row.onclick = () => { set(); st.page = 0; render(); document.querySelector(".filters").scrollIntoView({ behavior: "smooth" }); };
+  row.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); row.onclick(); } };
+}
+kt.querySelectorAll("tr[data-kind]").forEach(r => pick(r, () => { st.kind = r.dataset.kind; }));
+tt.querySelectorAll("tr[data-t]").forEach(r => pick(r, () => { st.kind = "type"; st.type = r.dataset.t; }));
+
+function changeOk(c) {
+  if (st.kind !== "all" && c[0] !== st.kind) return false;
+  if (st.type === "any") return true;
+  const a = c[1] && c[1][2], b = c[2] && c[2][2];
+  if (st.type.includes(">")) { const [x, y] = st.type.split(">"); return a === x && b === y; }
+  return a === st.type || b === st.type;
+}
+function matches(s) {
+  if (st.split !== "all" && s.split !== st.split) return false;
+  if (!s.changes.some(changeOk)) return false;
+  return !st.q || s.tokens.join(" ").toLowerCase().includes(st.q);
+}
+
+function line(tokens, spans, changed) {
+  const key = sp => sp.join(",");
+  const chg = new Set(changed.map(key));
+  const start = new Map(spans.map(sp => [sp[0], sp]));
+  let out = [], i = 0;
+  while (i < tokens.length) {
+    const sp = start.get(i);
+    if (sp) {
+      out.push(`<mark class="${sp[2]}${chg.has(key(sp)) ? " chg" : ""}"><span>${esc(tokens.slice(sp[0], sp[1]).join(" "))}</span><sub>${sp[2]}</sub></mark>`);
+      i = sp[1];
+    } else out.push(esc(tokens[i++]));
+  }
+  return out.join(" ");
+}
+
+function render() {
+  for (const [id, key] of [["f-split", "split"], ["f-kind", "kind"]])
+    document.querySelectorAll(`#${id} button`).forEach(b => b.setAttribute("aria-pressed", b.dataset.v === st[key]));
+  sel.value = st.type;
+  const hits = D.sents.filter(matches);
+  const pages = Math.max(1, Math.ceil(hits.length / PER_PAGE));
+  st.page = Math.min(st.page, pages - 1);
+  document.getElementById("count").textContent = `${fmt(hits.length)} sentence${hits.length === 1 ? "" : "s"}`;
+  document.getElementById("page").textContent = `Page ${st.page + 1} of ${pages}`;
+  document.getElementById("prev").disabled = st.page === 0;
+  document.getElementById("next").disabled = st.page >= pages - 1;
+  const items = document.getElementById("items");
+  items.innerHTML = hits.length ? hits.slice(st.page * PER_PAGE, (st.page + 1) * PER_PAGE).map(s => {
+    const cs = s.changes.filter(changeOk);
+    const kinds = [...new Set(s.changes.map(c => KLABEL[c[0]]))].join(", ");
+    return `<li class="item"><div class="meta"><span>${s.split} · doc ${s.doc + 1}</span><span>${esc(kinds)}</span></div>
+      <div class="row"><b>CoNLL-03</b><div class="sent">${line(s.tokens, s.orig, s.changes.map(c => c[1]).filter(Boolean))}</div></div>
+      <div class="row"><b>CleanCoNLL</b><div class="sent">${line(s.tokens, s.clean, s.changes.map(c => c[2]).filter(Boolean))}</div></div></li>`;
+  }).join("") : `<li class="empty">No sentences match these filters.</li>`;
+}
+document.getElementById("prev").onclick = () => { st.page--; render(); document.querySelector(".filters").scrollIntoView(); };
+document.getElementById("next").onclick = () => { st.page++; render(); document.querySelector(".filters").scrollIntoView(); };
+render();
+</script>
