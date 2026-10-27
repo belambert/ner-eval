@@ -1,4 +1,4 @@
-"""Fine-tuned Hugging Face encoder as a token classifier."""
+"""Fine-tuned Hugging Face encoder or decoder as a token classifier."""
 
 import random
 from collections.abc import Callable
@@ -7,12 +7,17 @@ from pathlib import Path
 from typing import Self
 
 import torch
+from torch import nn
 from tqdm import tqdm
 from transformers import (
     AutoModelForTokenClassification,
     AutoTokenizer,
+    ModernBertDecoderConfig,
+    ModernBertDecoderModel,
+    ModernBertDecoderPreTrainedModel,
     get_linear_schedule_with_warmup,
 )
+from transformers.modeling_outputs import TokenClassifierOutput
 
 from ner_eval.data import Sentence
 
@@ -21,7 +26,11 @@ IGNORE = -100
 
 @dataclass
 class Transformer:
-    """Fine-tune an encoder with a linear tagging head on each word's first subword."""
+    """Fine-tune a model with a linear tagging head on one subword per word.
+
+    Encoders label each word from its first subword. Decoders should use
+    `subword="last"`, since causal attention only lets a subword see what precedes it.
+    """
 
     model: str = "google-bert/bert-base-cased"
     epochs: int = 3
@@ -32,6 +41,7 @@ class Transformer:
     max_train: int | None = None
     device: str | None = None
     seed: int = 0
+    subword: str = "first"
 
     def fit(self, train: list[Sentence]) -> None:
         random.seed(self.seed)
@@ -39,15 +49,23 @@ class Transformer:
         if self.max_train:
             train = random.sample(train, min(self.max_train, len(train)))
 
+        assert self.subword in ("first", "last"), f"unknown subword {self.subword!r}"
         self.dev = torch.device(self.device or default_device())
         self.tok = AutoTokenizer.from_pretrained(self.model)
+        # many decoder tokenizers (e.g. Llama's) define no pad token
+        if self.tok.pad_token is None:
+            self.tok.pad_token = self.tok.eos_token
         self.labels = sorted({t for s in train for t in s.tags})
         lid = {t: i for i, t in enumerate(self.labels)}
+        # load fp32 weights whatever the checkpoint's dtype; pure fp16 weights (e.g.
+        # DeBERTa-v3's) turn NaN after one AdamW step, since its epsilon underflows
         self.net = AutoModelForTokenClassification.from_pretrained(
             self.model,
             num_labels=len(self.labels),
             id2label=dict(enumerate(self.labels)),
             label2id=lid,
+            pad_token_id=self.tok.pad_token_id,
+            dtype=torch.float32,
         ).to(self.dev)
 
         enc = [self._encode(s.tokens) for s in train]
@@ -105,7 +123,7 @@ class Transformer:
     @classmethod
     def load(cls, path: str, device: str | None = None) -> Self:
         """Load a tagger saved by `save` from a local directory or Hugging Face repo."""
-        net = AutoModelForTokenClassification.from_pretrained(path)
+        net = AutoModelForTokenClassification.from_pretrained(path, dtype=torch.float32)
         t = cls(**net.config.ner_eval | dict(device=device))
         t.dev = torch.device(device or default_device())
         t.net = net.to(t.dev)
@@ -114,7 +132,7 @@ class Transformer:
         return t
 
     def _encode(self, words: list[str]) -> tuple[list[int], list[int | None]]:
-        """Tokenize space-joined words; return ids and, per subword, its word if it's the first subword."""
+        """Tokenize space-joined words; return ids and, per subword, its word if it's the labeled one."""
         # joining (rather than is_split_into_words) gives BPE tokenizers the spaces they were
         # trained with; some (e.g. ModernBERT) ignore add_prefix_space
         text = " ".join(words)
@@ -125,13 +143,14 @@ class Transformer:
             text, return_offsets_mapping=True, truncation=True, max_length=self.max_len
         )
 
-        wids: list[int | None] = []
+        # map by the last char; offsets may or may not include a leading space
+        ws = [char_word[e - 1] if e > s else None for s, e in enc["offset_mapping"]]
+        wids: list[int | None] = [None] * len(ws)
         seen: set[int] = set()
-        for start, end in enc["offset_mapping"]:
-            # map by the last char; offsets may or may not include a leading space
-            w = char_word[end - 1] if end > start else None
-            wids.append(None if w is None or w in seen else w)
-            if w is not None:
+        order = range(len(ws)) if self.subword == "first" else reversed(range(len(ws)))
+        for k in order:
+            if (w := ws[k]) is not None and w not in seen:
+                wids[k] = w
                 seen.add(w)
         return enc["input_ids"], wids
 
@@ -161,3 +180,35 @@ def _batches[T](items: list[T], size: int, key: Callable[[T], int]) -> list[list
     """Group items of similar length to minimize padding."""
     srt = sorted(items, key=key)
     return [srt[i : i + size] for i in range(0, len(srt), size)]
+
+
+class ModernBertDecoderForTokenClassification(ModernBertDecoderPreTrainedModel):
+    """Linear token-classification head for ModernBERT decoders (e.g. Ettin's), which transformers lacks."""
+
+    def __init__(self, config: ModernBertDecoderConfig) -> None:
+        super().__init__(config)
+        self.model = ModernBertDecoderModel(config)
+        self.drop = nn.Dropout(config.classifier_dropout)
+        self.classifier = nn.Linear(config.hidden_size, config.num_labels)
+        self.post_init()
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor | None = None,
+        labels: torch.Tensor | None = None,
+    ) -> TokenClassifierOutput:
+        h = self.model(input_ids, attention_mask=attention_mask, use_cache=False)[0]
+        logits = self.classifier(self.drop(h))
+        loss = None
+        if labels is not None:
+            loss = nn.functional.cross_entropy(
+                logits.flatten(0, 1), labels.flatten(), ignore_index=IGNORE
+            )
+        return TokenClassifierOutput(loss=loss, logits=logits)
+
+
+# exist_ok, or registering a head for a built-in config is silently skipped
+AutoModelForTokenClassification.register(
+    ModernBertDecoderConfig, ModernBertDecoderForTokenClassification, exist_ok=True
+)
