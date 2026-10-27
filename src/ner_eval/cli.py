@@ -13,6 +13,14 @@ from ner_eval.metrics import score
 
 app = typer.Typer(no_args_is_help=True)
 
+Overlap = Annotated[
+    float,
+    typer.Option(
+        help="Count a predicted span as correct if its token IoU with a gold span "
+        "of the same type is at least this; 1.0 is exact match."
+    ),
+]
+
 
 @app.command()
 def evaluate(
@@ -42,13 +50,14 @@ def evaluate(
             "LOAD is a local directory or a Hugging Face user or org."
         ),
     ] = None,
-    overlap: Annotated[
-        float,
+    preds: Annotated[
+        Path | None,
         typer.Option(
-            help="Count a predicted span as correct if its token IoU with a gold span "
-            "of the same type is at least this; 1.0 is exact match."
+            help="Write predicted tags to PREDS/few-nerd-METHOD-DATASET-SPLIT.jsonl "
+            "for `rescore`."
         ),
-    ] = 1.0,
+    ] = None,
+    overlap: Overlap = 1.0,
     as_json: Annotated[bool, typer.Option("--json")] = False,
 ) -> None:
     """Train METHOD on each dataset's train split (or load it) and score it on SPLIT."""
@@ -69,7 +78,11 @@ def evaluate(
 
         gold = splits[split][:max_eval]
         pred = model.predict([x.tokens for x in gold])
-        s = score([x.tags for x in gold], pred, overlap)["ALL"]
+        if preds:
+            preds.mkdir(parents=True, exist_ok=True)
+            with (preds / f"{name}-{split}.jsonl").open("w") as f:
+                f.writelines(json.dumps(p, separators=(",", ":")) + "\n" for p in pred)
+
         row = dict(
             method=method,
             opts=opts,
@@ -80,12 +93,37 @@ def evaluate(
         )
         if load:
             row["ckpt"] = f"{load}/{name}"
-        rows.append(row | dict(p=s.p, r=s.r, f1=s.f1, tp=s.tp, fp=s.fp, fn=s.fn))
+        rows.append(row | _score(f"{ds:<6}", gold, pred, overlap, as_json))
         if out:
             with out.open("a") as f:
                 f.write(json.dumps(rows[-1]) + "\n")
-        if not as_json:
-            typer.echo(f"{ds:<6} P={s.p:.3f} R={s.r:.3f} F1={s.f1:.3f}")
+
+    if as_json:
+        typer.echo(json.dumps(rows, indent=2))
+
+
+@app.command()
+def rescore(
+    files: Annotated[
+        list[Path],
+        typer.Argument(help="Prediction files written by `evaluate --preds`."),
+    ],
+    overlap: Overlap = 1.0,
+    as_json: Annotated[bool, typer.Option("--json")] = False,
+) -> None:
+    """Score saved predictions against gold tags without rerunning the model."""
+    rows = []
+    for path in files:
+        # the dataset and split are the last two parts of few-nerd-METHOD-DATASET-SPLIT
+        *_, ds, split = path.stem.rsplit("-", 2)
+        pred = [json.loads(line) for line in path.open()]
+        # predictions cover the first N sentences when evaluate ran with --max-eval
+        gold = data.load(ds, (split,))[split][: len(pred)]
+        assert len(gold) == len(pred), f"{path} has more sentences than {ds}/{split}"
+        row = dict(
+            file=str(path), dataset=ds, split=split, n=len(pred), overlap=overlap
+        )
+        rows.append(row | _score(path.stem, gold, pred, overlap, as_json))
 
     if as_json:
         typer.echo(json.dumps(rows, indent=2))
@@ -109,6 +147,20 @@ def tags() -> None:
 def download() -> None:
     """Download Few-NERD into $NER_EVAL_DATA (default ./data/few-nerd)."""
     data.download()
+
+
+def _score(
+    label: str,
+    gold: list[data.Sentence],
+    pred: list[list[str]],
+    overlap: float,
+    quiet: bool,
+) -> dict[str, Any]:
+    """Score predictions, print a summary line unless `quiet`, and return the micro scores."""
+    s = score([x.tags for x in gold], pred, overlap)["ALL"]
+    if not quiet:
+        typer.echo(f"{label} P={s.p:.3f} R={s.r:.3f} F1={s.f1:.3f}")
+    return dict(p=s.p, r=s.r, f1=s.f1, tp=s.tp, fp=s.fp, fn=s.fn)
 
 
 def _parse_opt(o: str) -> tuple[str, Any]:

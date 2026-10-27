@@ -28,10 +28,11 @@ def list_datasets() -> list[str]:
     return list(LEVELS) if (DATA_DIR / "test.parquet").exists() else []
 
 
-def load(ds: str) -> dict[str, list[Sentence]]:
-    """Load all splits of `coarse` or `fine`, with Few-NERD's IO tags converted to BIO."""
+def load(ds: str, splits: tuple[str, ...] = SPLITS) -> dict[str, list[Sentence]]:
+    """Load splits of `coarse` or `fine`, with Few-NERD's IO tags converted to BIO."""
     assert ds in LEVELS, f"unknown dataset {ds!r}; choose from {LEVELS}"
-    return {s: read_parquet(DATA_DIR / f"{s}.parquet", ds) for s in SPLITS}
+    assert set(splits) <= set(SPLITS), f"unknown split; choose from {SPLITS}"
+    return {s: read_parquet(DATA_DIR / f"{s}.parquet", ds) for s in splits}
 
 
 def read_parquet(path: Path, lvl: str = "fine") -> list[Sentence]:

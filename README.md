@@ -75,13 +75,21 @@ span can be matched only once. The default of 1.0 is exact match. Combined with
     uv run ner-eval evaluate memorize --overlap 0.5
     uv run ner-eval evaluate bert --load <hf-user> --overlap 0.5
 
+To rescore without rerunning the model at all, save its predictions with `--preds DIR`.
+This writes `DIR/few-nerd-<method>-<level>-<split>.jsonl`, one JSON list of predicted
+tags per sentence, in split order. `rescore` reads the label set and split from the file
+name, loads the gold tags, and prints the same scores as `evaluate` (`--json` too):
+
+    uv run ner-eval evaluate memorize --preds results/preds
+    uv run ner-eval rescore results/preds/*.jsonl --overlap 0.5
+
 To train and evaluate every method on both label sets, run the sweep script:
 
     scripts/run_all.sh
 
-Each run writes `results/<method>-<level>.jsonl` and logs training progress to
-`results/logs/`. Finished runs are skipped, so rerunning resumes an interrupted sweep;
-set `FORCE=1` to redo them. Set `SAVE=1` to also save each model to `results/models/`.
+Each run writes `results/<method>-<level>.jsonl`, saves its predictions to
+`results/preds/` for `rescore`, and logs training progress to `results/logs/`. Finished
+runs are skipped, so rerunning resumes an interrupted sweep; set `FORCE=1` to redo them. Set `SAVE=1` to also save each model to `results/models/`.
 `RESULTS`, `METHODS`, and `LEVELS` override the output directory, methods, and label
 sets. Extra arguments are passed to `evaluate`:
 
