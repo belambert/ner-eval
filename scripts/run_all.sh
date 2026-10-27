@@ -3,7 +3,8 @@
 #
 # Usage: scripts/run_all.sh [evaluate options...]
 #
-# Each run writes $RESULTS/<method>-<level>.jsonl and logs training progress to
+# Each run writes $RESULTS/<method>-<level>.jsonl, saves its predicted tags to
+# $RESULTS/preds/ for `ner-eval rescore`, and logs training progress to
 # $RESULTS/logs/<method>-<level>.log. Finished runs are skipped, so rerunning resumes
 # an interrupted sweep; set FORCE=1 to redo them. Set SAVE=1 to also save each model
 # to $RESULTS/models/. Extra arguments go to every `ner-eval evaluate` call. For
@@ -33,7 +34,7 @@ for m in $METHODS; do
     rm -f "$out"
     echo "$(date '+%F %T') start $m/$lvl"
     # keep going if one run fails so a long sweep isn't lost
-    if ! uv run ner-eval evaluate "$m" "$lvl" --out "$out" "${save[@]}" "$@" 2>"$log"; then
+    if ! uv run ner-eval evaluate "$m" "$lvl" --out "$out" --preds "$RESULTS/preds" "${save[@]}" "$@" 2>"$log"; then
       echo "FAILED $m/$lvl; see $log"
       failed+=("$m/$lvl")
     fi
