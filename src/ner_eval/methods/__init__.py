@@ -27,17 +27,14 @@ ENCODERS = {
     "deberta": "microsoft/deberta-v3-base",
     "deberta-large": "microsoft/deberta-v3-large",
     "ettin": "jhu-clsp/ettin-encoder-150m",
-    **{
-        f"ettin-{s}": f"jhu-clsp/ettin-encoder-{s}"
-        for s in ["17m", "32m", "68m", "400m", "1b"]
-    },
+    **{f"ettin-{s}": f"jhu-clsp/ettin-encoder-{s}" for s in ["400m", "1b"]},
 }
 
 # decoders, with the learning rate where it differs from the default
 DECODERS = {
     **{
         f"ettin-dec-{s}": (f"jhu-clsp/ettin-decoder-{s}", 5e-5)
-        for s in ["17m", "32m", "68m", "150m", "400m", "1b"]
+        for s in ["150m", "400m", "1b"]
     },
     "qwen3-0.6b": ("Qwen/Qwen3-0.6B", 2e-5),
     "qwen3-1.7b": ("Qwen/Qwen3-1.7B", 2e-5),

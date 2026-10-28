@@ -94,15 +94,9 @@ To push the saved transformer models to private Hugging Face repos:
 | `modernbert-large` | Fine-tuned `answerdotai/ModernBERT-large`                              | 396M   |
 | `deberta`          | Fine-tuned `microsoft/deberta-v3-base`                                 | 184M   |
 | `deberta-large`    | Fine-tuned `microsoft/deberta-v3-large`                                | 434M   |
-| `ettin-17m`        | Fine-tuned `jhu-clsp/ettin-encoder-17m`                                | 17M    |
-| `ettin-32m`        | Fine-tuned `jhu-clsp/ettin-encoder-32m`                                | 32M    |
-| `ettin-68m`        | Fine-tuned `jhu-clsp/ettin-encoder-68m`                                | 68M    |
 | `ettin`            | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 150M   |
 | `ettin-400m`       | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 396M   |
 | `ettin-1b`         | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 | 1.03B  |
-| `ettin-dec-17m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-17m`                        | 17M    |
-| `ettin-dec-32m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-32m`                        | 32M    |
-| `ettin-dec-68m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-68m`                        | 68M    |
 | `ettin-dec-150m`   | Fine-tuned decoder `jhu-clsp/ettin-decoder-150m`                       | 149M   |
 | `ettin-dec-400m`   | Fine-tuned decoder `jhu-clsp/ettin-decoder-400m`                       | 395M   |
 | `ettin-dec-1b`     | Fine-tuned decoder `jhu-clsp/ettin-decoder-1b`                         | 1.03B  |
