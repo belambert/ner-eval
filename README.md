@@ -24,35 +24,33 @@ Install the project and download the data into `./data` (or set `NER_EVAL_DATA`)
     uv run ner-eval download
     uv run ner-eval list
 
-Train a method on the train split and evaluate it on test (or `--split dev`):
+Train a method on the train split, save it to `results/models/` (or `--models DIR`),
+and score it on test (or `--split dev`). Each model is saved in
+`<corpus>-<method>-<dataset>`, e.g. `results/models/conll-bert-cleanconll`:
 
-    uv run ner-eval evaluate bert            # every downloaded dataset
-    uv run ner-eval evaluate bert cleanconll --json
+    uv run ner-eval train bert            # every downloaded dataset
+    uv run ner-eval train bert cleanconll --json
 
 Pass method options with `-o key=value`. Use `--max-eval` to score a subset of the
 evaluation split, and `--out` to append results to a JSONL file:
 
-    uv run ner-eval evaluate bert cleanconll -o max_train=2000 -o epochs=1 --max-eval 1000
-    uv run ner-eval evaluate modernbert --out results/runs.jsonl
+    uv run ner-eval train bert cleanconll -o max_train=2000 -o epochs=1 --max-eval 1000
+    uv run ner-eval train modernbert --out results/runs.jsonl
 
-Use `--save DIR` to keep each trained model in `DIR/<corpus>-<method>-<dataset>` (e.g.
-`conll-bert-cleanconll`), and
-`--load DIR` to evaluate saved models without retraining. For transformer methods,
-`DIR` can also be a Hugging Face user or org that the models were pushed to:
+`evaluate` scores saved models without retraining. It takes the same scoring options
+as `train`, and `--models` can also be a Hugging Face user or org that the models were
+pushed to:
 
-    uv run ner-eval evaluate bert cleanconll --save results/models
-    uv run ner-eval evaluate bert cleanconll --load results/models
-    uv run ner-eval evaluate bert cleanconll --load <hf-user>
+    uv run ner-eval evaluate bert cleanconll
+    uv run ner-eval evaluate bert cleanconll --split dev --models <hf-user>
 
 Scores are exact-match, span-level micro precision, recall, and F1, following
 conlleval conventions. Use `--overlap` to also accept partial matches. A predicted
 span then counts as correct if its type matches a gold span and its token overlap
 with that span (intersection over union) is at least the given fraction. Each gold
-span can be matched only once. The default of 1.0 is exact match. Combined with
-`--load`, this rescores saved models without retraining:
+span can be matched only once. The default of 1.0 is exact match:
 
-    uv run ner-eval evaluate bert --load results/models --overlap 0.5
-    uv run ner-eval evaluate bert --load <hf-user> --overlap 0.5
+    uv run ner-eval evaluate bert --overlap 0.5
 
 To rescore without rerunning the model at all, save its predictions with `--preds DIR`.
 This writes `DIR/<corpus>-<method>-<dataset>-<split>.jsonl`, one JSON list of predicted
@@ -66,12 +64,11 @@ To train and evaluate every method on every dataset, run the sweep script:
 
     scripts/run_all.sh
 
-Each run writes `results/<method>-<dataset>.jsonl`, saves its predictions to
-`results/preds/` for `rescore`, and logs training progress to `results/logs/`. Finished
-runs are skipped, so rerunning resumes an interrupted sweep; set `FORCE=1` to redo them.
-Set `SAVE=1` to also save each model to `results/models/`. `RESULTS`, `METHODS`, and
-`DATASETS` override the output directory, methods, and datasets. Extra arguments are
-passed to `evaluate`:
+Each run saves its model to `results/models/`, writes `results/<method>-<dataset>.jsonl`,
+saves its predictions to `results/preds/` for `rescore`, and logs training progress to
+`results/logs/`. Finished runs are skipped, so rerunning resumes an interrupted sweep;
+set `FORCE=1` to redo them. `RESULTS`, `METHODS`, and `DATASETS` override the output
+directory, methods, and datasets. Extra arguments are passed to `train`:
 
     RESULTS=results/smoke METHODS="bert modernbert" DATASETS=cleanconll scripts/run_all.sh \
         -o max_train=2000 -o epochs=1 --max-eval 1000

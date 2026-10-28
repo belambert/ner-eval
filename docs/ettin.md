@@ -26,8 +26,8 @@ from the registry to shorten the method list; this page keeps their results.
 
 The `transformer` method can still run any of them. Decoders need `subword=last`:
 
-    uv run ner-eval evaluate transformer cleanconll -o model=jhu-clsp/ettin-encoder-150m
-    uv run ner-eval evaluate transformer cleanconll -o model=jhu-clsp/ettin-decoder-150m -o subword=last
+    uv run ner-eval train transformer cleanconll -o model=jhu-clsp/ettin-encoder-150m
+    uv run ner-eval train transformer cleanconll -o model=jhu-clsp/ettin-decoder-150m -o subword=last
 
 ## Results
 
