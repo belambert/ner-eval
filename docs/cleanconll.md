@@ -22,28 +22,37 @@ tokens, so its counts differ slightly from CoNLL-03's.
 
 ## Results
 
-| Method             | F1    | F1, 50% overlap |
-| ------------------ | ----- | --------------- |
-| `bert`             | 0.933 | 0.945           |
-| `roberta`          | 0.941 | 0.950           |
-| `roberta-large`    | 0.955 | 0.962           |
-| `modernbert`       | 0.933 | 0.947           |
-| `modernbert-large` | 0.945 | 0.956           |
-| `deberta`          | 0.949 | 0.957           |
-| `deberta-large`    | 0.953 | 0.962           |
-| `qwen3-0.6b`       | 0.829 | 0.873           |
-| `qwen3-1.7b`       | 0.851 | 0.894           |
+| Method              | F1    | F1, 50% overlap |
+| ------------------- | ----- | --------------- |
+| `bert`              | 0.933 | 0.945           |
+| `roberta`           | 0.941 | 0.950           |
+| `roberta-large`     | 0.955 | 0.962           |
+| `xlm-roberta-large` | 0.949 | 0.956           |
+| `modernbert`        | 0.933 | 0.947           |
+| `modernbert-large`  | 0.945 | 0.956           |
+| `deberta`           | 0.949 | 0.957           |
+| `deberta-large`     | 0.953 | 0.962           |
+| `qwen3-0.6b`        | 0.830 | 0.871           |
+| `qwen3-1.7b`        | 0.851 | 0.893           |
+| `qwen3-4b`          | 0.851 | 0.890           |
 
 Scores are span-level micro F1 on the test split with the default options and one seed.
 The 50% overlap column also counts a predicted span as correct if its token overlap
 with a gold span of the same type is at least 0.5 (`--overlap 0.5`). The whole sweep
-takes under two hours on an NVIDIA GB10.
+takes about two hours on an NVIDIA GB10, nearly an hour of it for `qwen3-4b`. The
+encoders reproduce the previous sweep's scores exactly, and the Qwen3 models' scores
+move by at most 0.002.
 
 The same models score 0.93 to 0.955 here but about 0.79 on Few-NERD's 8 coarse types.
 CleanCoNLL is an easier task, with 4 types and news text, but cleaner labels likely
 account for part of the gap. Accepting partial matches adds only about 0.01 F1 for the
 encoders, against about 0.055 on Few-NERD, so span boundaries are much more consistent
-here. Decoders still trail the encoders by about 0.1 F1.
+here. Decoders still trail the encoders by about 0.1 F1, and `qwen3-4b` scores no
+better than `qwen3-1.7b`, so scaling the decoder doesn't close the gap.
+The [paper]'s best results use `xlm-roberta-large`, reaching 97.08 F1 with a biaffine
+span classifier and 96.98 with FLERT's document context. Here, with a plain linear
+tagger on single sentences, it scores 0.949, below `roberta-large`, so the gap to those
+results likely comes from the span classifier and the context, not the encoder.
 
 ## Changes From CoNLL-03
 
