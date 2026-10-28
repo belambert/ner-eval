@@ -33,7 +33,8 @@ class Transformer:
     Encoders label each word from its first subword. Decoders should use
     `subword="last"`, since causal attention only lets a subword see what precedes it,
     or `bidirectional=True`, which drops the causal mask so every subword sees the
-    whole sentence.
+    whole sentence, or `repeat=True`, which feeds the sentence twice and labels the
+    second copy, so every labeled subword sees the whole sentence through the first.
     """
 
     model: str = "google-bert/bert-base-cased"
@@ -47,6 +48,7 @@ class Transformer:
     seed: int = 0
     subword: str = "first"
     bidirectional: bool = False
+    repeat: bool = False
 
     def fit(self, train: list[Sentence]) -> None:
         random.seed(self.seed)
@@ -166,7 +168,10 @@ class Transformer:
             if (w := ws[k]) is not None and w not in seen:
                 wids[k] = w
                 seen.add(w)
-        return enc["input_ids"], wids
+        ids = enc["input_ids"]
+        if self.repeat:
+            return ids + ids, [None] * len(ids) + wids
+        return ids, wids
 
     def _pad(
         self, seqs: list[list[int]], value: int | None = None
