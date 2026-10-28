@@ -45,6 +45,11 @@ account for part of the gap. Accepting partial matches adds only about 0.01 F1 f
 encoders, against about 0.055 on Few-NERD, so span boundaries are much more consistent
 here. Decoders still trail the encoders by about 0.1 F1.
 
+[roberta-large-errors.html](roberta-large-errors.html) shows every sentence in the test
+split where `roberta-large` makes an error, written by `ner-errors`. Of its 325 errors,
+128 are wrong types, 108 are boundary errors, 56 are spurious entities, and 33 are
+missed entities. GitHub shows the file as source, so download it to view it.
+
 ## Changes From CoNLL-03
 
 The separate `conll-diff` command writes an HTML page of every entity label CleanCoNLL changed from CoNLL-03,
