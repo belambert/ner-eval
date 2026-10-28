@@ -19,6 +19,7 @@ dependencies = [
 [project.scripts]
 ner-eval = "ner_eval.cli:app"
 conll-diff = "ner_eval.conll_diff:main"
+ner-errors = "ner_eval.errors:main"
 
 [build-system]
 requires = ["uv_build>=0.9.3,<0.10.0"]
