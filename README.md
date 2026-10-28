@@ -104,7 +104,6 @@ To push the saved transformer models to private Hugging Face repos:
 | `qwen3-0.6b`        | Fine-tuned decoder `Qwen/Qwen3-0.6B`                                   | 596M   |
 | `qwen3-1.7b`        | Fine-tuned decoder `Qwen/Qwen3-1.7B`                                   | 1.72B  |
 | `qwen3-4b`          | Fine-tuned decoder `Qwen/Qwen3-4B`                                     | 4.02B  |
-| `transformer`       | Fine-tuned model of your choice, set with `-o model=<hf-id>`           |        |
 
 Params counts the fine-tuned model, including the tagging head, whose size varies
 slightly by dataset. Results are in each dataset's doc.
