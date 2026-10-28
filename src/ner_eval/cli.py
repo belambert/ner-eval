@@ -106,7 +106,9 @@ def evaluate(
 def rescore(
     files: Annotated[
         list[Path],
-        typer.Argument(help="Prediction files written by `train` or `evaluate` with `--preds`."),
+        typer.Argument(
+            help="Prediction files written by `train` or `evaluate` with `--preds`."
+        ),
     ],
     overlap: Overlap = 1.0,
     as_json: Json = False,
