@@ -4,7 +4,7 @@ import random
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 import torch
 from torch import nn
@@ -15,8 +15,10 @@ from transformers import (
     ModernBertDecoderConfig,
     ModernBertDecoderModel,
     ModernBertDecoderPreTrainedModel,
+    PreTrainedModel,
     get_linear_schedule_with_warmup,
 )
+from transformers.masking_utils import create_bidirectional_mask
 from transformers.modeling_outputs import TokenClassifierOutput
 
 from ner_eval.data import Sentence
@@ -29,7 +31,9 @@ class Transformer:
     """Fine-tune a model with a linear tagging head on one subword per word.
 
     Encoders label each word from its first subword. Decoders should use
-    `subword="last"`, since causal attention only lets a subword see what precedes it.
+    `subword="last"`, since causal attention only lets a subword see what precedes it,
+    or `bidirectional=True`, which drops the causal mask so every subword sees the
+    whole sentence.
     """
 
     model: str = "google-bert/bert-base-cased"
@@ -42,6 +46,7 @@ class Transformer:
     device: str | None = None
     seed: int = 0
     subword: str = "first"
+    bidirectional: bool = False
 
     def fit(self, train: list[Sentence]) -> None:
         random.seed(self.seed)
@@ -67,6 +72,8 @@ class Transformer:
             pad_token_id=self.tok.pad_token_id,
             dtype=torch.float32,
         ).to(self.dev)
+        if self.bidirectional:
+            make_bidirectional(self.net)
 
         enc = [self._encode(s.tokens) for s in train]
         data = [
@@ -85,8 +92,7 @@ class Transformer:
             for b in batches:
                 ids, mask = self._pad([x for x, _ in b])
                 y = self._pad([y for _, y in b], IGNORE)[0]
-                with self._autocast():
-                    loss = self.net(input_ids=ids, attention_mask=mask, labels=y).loss
+                loss = self._run(ids, mask, y).loss
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.net.parameters(), 1.0)
                 opt.step()
@@ -104,8 +110,7 @@ class Transformer:
         items = list(enumerate(enc))
         for b in _batches(items, self.batch_size * 2, key=lambda x: len(x[1][0])):
             ids, mask = self._pad([ids for _, (ids, _) in b])
-            with self._autocast():
-                pred = self.net(input_ids=ids, attention_mask=mask).logits.argmax(-1)
+            pred = self._run(ids, mask).logits.argmax(-1)
             for (i, (_, wids)), p in zip(b, pred.tolist()):
                 for w, label in zip(wids, p):
                     if w is not None:
@@ -127,9 +132,18 @@ class Transformer:
         t = cls(**net.config.ner_eval | dict(device=device))
         t.dev = torch.device(device or default_device())
         t.net = net.to(t.dev)
+        if t.bidirectional:
+            make_bidirectional(t.net)
         t.tok = AutoTokenizer.from_pretrained(path)
         t.labels = [net.config.id2label[i] for i in range(net.config.num_labels)]
         return t
+
+    def _run(
+        self, ids: torch.Tensor, mask: torch.Tensor, labels: torch.Tensor | None = None
+    ) -> Any:
+        with self._autocast():
+            m = bidirectional_mask(self.net, ids, mask) if self.bidirectional else mask
+            return self.net(input_ids=ids, attention_mask=m, labels=labels)
 
     def _encode(self, words: list[str]) -> tuple[list[int], list[int | None]]:
         """Tokenize space-joined words; return ids and, per subword, its word if it's the labeled one."""
@@ -174,6 +188,28 @@ def default_device() -> str:
     if torch.cuda.is_available():
         return "cuda"
     return "mps" if torch.backends.mps.is_available() else "cpu"
+
+
+def make_bidirectional(net: nn.Module) -> None:
+    """Turn off causal attention in every layer of a decoder."""
+    # sdpa and flash attention apply a causal mask themselves when is_causal is set
+    for m in net.modules():
+        if hasattr(m, "is_causal"):
+            setattr(m, "is_causal", False)
+
+
+def bidirectional_mask(
+    net: PreTrainedModel, ids: torch.Tensor, mask: torch.Tensor
+) -> dict[str, Any]:
+    """Return a padding-only attention mask for each of a decoder's layer types."""
+    # decoders like Qwen3 and ModernBERT's take prepared masks keyed by layer type, in
+    # place of the causal ones they'd build; a sliding-window layer becomes full attention
+    meta = torch.empty(*ids.shape, 1, dtype=net.dtype, device=ids.device)
+    m = create_bidirectional_mask(
+        net.config, meta, mask, allow_is_bidirectional_skip=False
+    )
+    types = getattr(net.config, "layer_types", None) or ["full_attention"]
+    return {t: m for t in set(types)}
 
 
 def _batches[T](items: list[T], size: int, key: Callable[[T], int]) -> list[list[T]]:

@@ -1,5 +1,9 @@
+import pytest
+import torch
+from transformers import Qwen3Config, Qwen3ForTokenClassification
+
 from ner_eval.cli import _parse_opt
-from ner_eval.methods.transformer import Transformer
+from ner_eval.methods.transformer import Transformer, make_bidirectional
 
 
 class FakeTok:
@@ -41,3 +45,33 @@ def test_parse_opt():
         "model",
         "google-bert/bert-base-cased",
     )
+
+
+@pytest.mark.parametrize("bidirectional", [False, True])
+def test_bidirectional_sees_later_tokens(bidirectional):
+    torch.manual_seed(0)
+    config = Qwen3Config(
+        vocab_size=50,
+        hidden_size=16,
+        intermediate_size=32,
+        num_hidden_layers=2,
+        num_attention_heads=2,
+        num_key_value_heads=1,
+        head_dim=8,
+        num_labels=3,
+    )
+    t = Transformer(device="cpu", bidirectional=bidirectional)
+    t.dev, t.net = torch.device("cpu"), Qwen3ForTokenClassification(config).eval()
+    if bidirectional:
+        make_bidirectional(t.net)
+
+    # the second row changes only the last token, and pads the third row's end
+    ids = torch.tensor([[1, 2, 3, 4], [1, 2, 3, 5], [1, 2, 3, 0]])
+    mask = torch.tensor([[1, 1, 1, 1], [1, 1, 1, 1], [1, 1, 1, 0]])
+    with torch.no_grad():
+        logits = t._run(ids, mask).logits
+    first_changed = not torch.allclose(logits[0, 0], logits[1, 0])
+    assert first_changed == bidirectional
+    # padding is masked either way, so a padded row matches the unpadded prefix
+    short = t._run(ids[:1, :3], mask[:1, :3]).logits
+    assert torch.allclose(logits[2, :3], short[0], atol=1e-5)
