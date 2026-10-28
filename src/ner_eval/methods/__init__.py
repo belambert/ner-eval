@@ -22,6 +22,7 @@ ENCODERS = {
     "bert": "google-bert/bert-base-cased",
     "roberta": "FacebookAI/roberta-base",
     "roberta-large": "FacebookAI/roberta-large",
+    "xlm-roberta-large": "FacebookAI/xlm-roberta-large",
     "modernbert": "answerdotai/ModernBERT-base",
     "modernbert-large": "answerdotai/ModernBERT-large",
     "deberta": "microsoft/deberta-v3-base",
