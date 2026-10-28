@@ -49,6 +49,7 @@ class Transformer:
     subword: str = "first"
     bidirectional: bool = False
     repeat: bool = False
+    checkpointing: bool = False
 
     def fit(self, train: list[Sentence]) -> None:
         random.seed(self.seed)
@@ -76,6 +77,9 @@ class Transformer:
         ).to(self.dev)
         if self.bidirectional:
             make_bidirectional(self.net)
+        if self.checkpointing:
+            # recompute activations in the backward pass; same results, less memory
+            self.net.gradient_checkpointing_enable({"use_reentrant": False})
 
         enc = [self._encode(s.tokens) for s in train]
         data = [
