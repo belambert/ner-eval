@@ -24,7 +24,6 @@ tokens, so its counts differ slightly from CoNLL-03's.
 
 | Method             | F1    | F1, 50% overlap |
 | ------------------ | ----- | --------------- |
-| `memorize`         | 0.569 | 0.610           |
 | `bert`             | 0.933 | 0.945           |
 | `roberta`          | 0.941 | 0.950           |
 | `roberta-large`    | 0.955 | 0.962           |
@@ -32,12 +31,6 @@ tokens, so its counts differ slightly from CoNLL-03's.
 | `modernbert-large` | 0.945 | 0.956           |
 | `deberta`          | 0.949 | 0.957           |
 | `deberta-large`    | 0.953 | 0.962           |
-| `ettin`            | 0.930 | 0.940           |
-| `ettin-400m`       | 0.938 | 0.952           |
-| `ettin-1b`         | 0.946 | 0.958           |
-| `ettin-dec-150m`   | 0.820 | 0.866           |
-| `ettin-dec-400m`   | 0.837 | 0.881           |
-| `ettin-dec-1b`     | 0.844 | 0.886           |
 | `qwen3-0.6b`       | 0.829 | 0.873           |
 | `qwen3-1.7b`       | 0.851 | 0.894           |
 

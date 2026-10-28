@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Protocol
 
 from ner_eval.data import Sentence
-from ner_eval.methods.memorize import Memorize
 from ner_eval.methods.transformer import Transformer
 
 
@@ -27,23 +26,16 @@ ENCODERS = {
     "modernbert-large": "answerdotai/ModernBERT-large",
     "deberta": "microsoft/deberta-v3-base",
     "deberta-large": "microsoft/deberta-v3-large",
-    "ettin": "jhu-clsp/ettin-encoder-150m",
-    **{f"ettin-{s}": f"jhu-clsp/ettin-encoder-{s}" for s in ["400m", "1b"]},
 }
 
 # decoders, with the learning rate where it differs from the default
 DECODERS = {
-    **{
-        f"ettin-dec-{s}": (f"jhu-clsp/ettin-decoder-{s}", 5e-5)
-        for s in ["150m", "400m", "1b"]
-    },
     "qwen3-0.6b": ("Qwen/Qwen3-0.6B", 2e-5),
     "qwen3-1.7b": ("Qwen/Qwen3-1.7B", 2e-5),
     "qwen3-4b": ("Qwen/Qwen3-4B", 2e-5),
 }
 
 METHODS: dict[str, Callable[..., Tagger]] = {
-    "memorize": Memorize,
     "transformer": Transformer,
     **{name: partial(Transformer, model=m) for name, m in ENCODERS.items()},
     **{

@@ -1,8 +1,8 @@
 # ner-eval
 
-A harness for training and comparing named entity recognition methods, from a lexicon
-baseline to fine-tuned encoders and decoders, on English NER datasets. Each method is
-trained on a dataset's train split and scored on its test split.
+A harness for training and comparing named entity recognition methods, fine-tuned
+encoders and decoders, on English NER datasets. Each method is trained on a dataset's
+train split and scored on its test split.
 
 ## Datasets
 
@@ -26,8 +26,8 @@ Install the project and download the data into `./data` (or set `NER_EVAL_DATA`)
 
 Train a method on the train split and evaluate it on test (or `--split dev`):
 
-    uv run ner-eval evaluate memorize            # every downloaded dataset
-    uv run ner-eval evaluate memorize cleanconll --json
+    uv run ner-eval evaluate bert            # every downloaded dataset
+    uv run ner-eval evaluate bert cleanconll --json
 
 Pass method options with `-o key=value`. Use `--max-eval` to score a subset of the
 evaluation split, and `--out` to append results to a JSONL file:
@@ -51,7 +51,7 @@ with that span (intersection over union) is at least the given fraction. Each go
 span can be matched only once. The default of 1.0 is exact match. Combined with
 `--load`, this rescores saved models without retraining:
 
-    uv run ner-eval evaluate memorize --overlap 0.5
+    uv run ner-eval evaluate bert --load results/models --overlap 0.5
     uv run ner-eval evaluate bert --load <hf-user> --overlap 0.5
 
 To rescore without rerunning the model at all, save its predictions with `--preds DIR`.
@@ -59,7 +59,7 @@ This writes `DIR/<corpus>-<method>-<dataset>-<split>.jsonl`, one JSON list of pr
 tags per sentence, in split order. `rescore` reads the dataset and split from the file
 name, loads the gold tags, and prints the same scores as `evaluate` (`--json` too):
 
-    uv run ner-eval evaluate memorize --preds results/preds
+    uv run ner-eval evaluate bert --preds results/preds
     uv run ner-eval rescore results/preds/*.jsonl --overlap 0.5
 
 To train and evaluate every method on every dataset, run the sweep script:
@@ -86,7 +86,6 @@ To push the saved transformer models to private Hugging Face repos:
 
 | Name                | Description                                                            | Params |
 | ------------------- | ---------------------------------------------------------------------- | ------ |
-| `memorize`          | Lexicon baseline that tags the longest entity strings seen in training | –      |
 | `bert`              | Fine-tuned `google-bert/bert-base-cased`                               | 108M   |
 | `roberta`           | Fine-tuned `FacebookAI/roberta-base`                                   | 124M   |
 | `roberta-large`     | Fine-tuned `FacebookAI/roberta-large`                                  | 354M   |
@@ -95,18 +94,13 @@ To push the saved transformer models to private Hugging Face repos:
 | `modernbert-large`  | Fine-tuned `answerdotai/ModernBERT-large`                              | 396M   |
 | `deberta`           | Fine-tuned `microsoft/deberta-v3-base`                                 | 184M   |
 | `deberta-large`     | Fine-tuned `microsoft/deberta-v3-large`                                | 434M   |
-| `ettin`             | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 150M   |
-| `ettin-400m`        | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 396M   |
-| `ettin-1b`          | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 | 1.03B  |
-| `ettin-dec-150m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-150m`                       | 149M   |
-| `ettin-dec-400m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-400m`                       | 395M   |
-| `ettin-dec-1b`      | Fine-tuned decoder `jhu-clsp/ettin-decoder-1b`                         | 1.03B  |
 | `qwen3-0.6b`        | Fine-tuned decoder `Qwen/Qwen3-0.6B`                                   | 596M   |
 | `qwen3-1.7b`        | Fine-tuned decoder `Qwen/Qwen3-1.7B`                                   | 1.72B  |
 | `qwen3-4b`          | Fine-tuned decoder `Qwen/Qwen3-4B`                                     | 4.02B  |
 
 Params counts the fine-tuned model, including the tagging head, whose size varies
-slightly by dataset. Results are in each dataset's doc.
+slightly by dataset. Results are in each dataset's doc. The Ettin models were removed
+to shorten the list; their results are in [docs/ettin.md](docs/ettin.md).
 
 The transformer methods fine-tune a Hugging Face model with a linear tagging head.
 Encoders predict each word's label from its first subword. Decoders use its last
