@@ -15,7 +15,7 @@
 set -uo pipefail
 
 RESULTS=${RESULTS:-results}
-METHODS=${METHODS:-"memorize bert roberta modernbert"}
+METHODS=${METHODS:-"bert roberta modernbert"}
 DATASETS=${DATASETS:-"cleanconll"}
 save=()
 [[ -n ${SAVE:-} ]] && save=(--save "$RESULTS/models")

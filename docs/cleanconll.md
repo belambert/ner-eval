@@ -24,7 +24,6 @@ tokens, so its counts differ slightly from CoNLL-03's.
 
 | Method             | F1    | F1, 50% overlap |
 | ------------------ | ----- | --------------- |
-| `memorize`         | 0.569 | 0.610           |
 | `bert`             | 0.933 | 0.945           |
 | `roberta`          | 0.941 | 0.950           |
 | `roberta-large`    | 0.955 | 0.962           |

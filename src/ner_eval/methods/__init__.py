@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Protocol
 
 from ner_eval.data import Sentence
-from ner_eval.methods.memorize import Memorize
 from ner_eval.methods.transformer import Transformer
 
 
@@ -37,7 +36,6 @@ DECODERS = {
 }
 
 METHODS: dict[str, Callable[..., Tagger]] = {
-    "memorize": Memorize,
     "transformer": Transformer,
     **{name: partial(Transformer, model=m) for name, m in ENCODERS.items()},
     **{
