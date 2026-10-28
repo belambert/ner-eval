@@ -111,14 +111,19 @@ Encoders predict each word's label from its first subword. Decoders use its last
 subword (`subword=last`), since causal attention only lets a subword see the text
 before it. By default their attention stays causal, so a word's label can't depend on
 the words after it. `bidirectional=True` drops the causal mask during fine-tuning and
-prediction, so every subword attends to the whole sentence, as in an encoder. The Qwen3 models use `lr=2e-5`, a more typical rate for full fine-tuning of
+prediction, so every subword attends to the whole sentence, as in an encoder.
+`repeat=True` instead feeds each sentence twice and labels only the second copy, so
+every labeled subword can attend to the whole sentence through the first copy. It
+needs no change to the model but doubles the sequence length (up to twice `max_len`).
+The Qwen3 models use `lr=2e-5`, a more typical rate for full fine-tuning of
 LLMs. Words are joined with spaces before tokenization rather than passed pre-split,
 because some BPE tokenizers (e.g. ModernBERT's) would otherwise drop the spaces they
 were trained with. Training runs on CUDA, MPS, or CPU, whichever is available, with
 fp32 weights (whatever the checkpoint's dtype) and bf16 autocast on CUDA. The main
 options and their defaults are `epochs=3`, `lr=5e-5`, `batch_size=32`, `max_len=256`
 (subwords; words past it are tagged `O`), `warmup=0.1`, `max_train` (subsample the
-training set), `subword=first`, `bidirectional=False`, `device`, and `seed=0`.
+training set), `subword=first`, `bidirectional=False`, `repeat=False`, `device`, and
+`seed=0`.
 
 To add a method, write a class with `fit(train: list[Sentence])` and
 `predict(sents: list[list[str]]) -> list[list[str]]`, then register it in
