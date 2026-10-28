@@ -22,6 +22,7 @@ ENCODERS = {
     "bert": "google-bert/bert-base-cased",
     "roberta": "FacebookAI/roberta-base",
     "roberta-large": "FacebookAI/roberta-large",
+    "xlm-roberta-large": "FacebookAI/xlm-roberta-large",
     "modernbert": "answerdotai/ModernBERT-base",
     "modernbert-large": "answerdotai/ModernBERT-large",
     "deberta": "microsoft/deberta-v3-base",
@@ -38,6 +39,7 @@ DECODERS = {
     },
     "qwen3-0.6b": ("Qwen/Qwen3-0.6B", 2e-5),
     "qwen3-1.7b": ("Qwen/Qwen3-1.7B", 2e-5),
+    "qwen3-4b": ("Qwen/Qwen3-4B", 2e-5),
 }
 
 METHODS: dict[str, Callable[..., Tagger]] = {

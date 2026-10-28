@@ -84,25 +84,26 @@ To push the saved transformer models to private Hugging Face repos:
 
 ## Methods
 
-| Name               | Description                                                            | Params |
-| ------------------ | ---------------------------------------------------------------------- | ------ |
-| `memorize`         | Lexicon baseline that tags the longest entity strings seen in training | –      |
-| `bert`             | Fine-tuned `google-bert/bert-base-cased`                               | 108M   |
-| `roberta`          | Fine-tuned `FacebookAI/roberta-base`                                   | 124M   |
-| `roberta-large`    | Fine-tuned `FacebookAI/roberta-large`                                  | 354M   |
-| `modernbert`       | Fine-tuned `answerdotai/ModernBERT-base`                               | 150M   |
-| `modernbert-large` | Fine-tuned `answerdotai/ModernBERT-large`                              | 396M   |
-| `deberta`          | Fine-tuned `microsoft/deberta-v3-base`                                 | 184M   |
-| `deberta-large`    | Fine-tuned `microsoft/deberta-v3-large`                                | 434M   |
-| `ettin`            | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 150M   |
-| `ettin-400m`       | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 396M   |
-| `ettin-1b`         | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 | 1.03B  |
-| `ettin-dec-150m`   | Fine-tuned decoder `jhu-clsp/ettin-decoder-150m`                       | 149M   |
-| `ettin-dec-400m`   | Fine-tuned decoder `jhu-clsp/ettin-decoder-400m`                       | 395M   |
-| `ettin-dec-1b`     | Fine-tuned decoder `jhu-clsp/ettin-decoder-1b`                         | 1.03B  |
-| `qwen3-0.6b`       | Fine-tuned decoder `Qwen/Qwen3-0.6B`                                   | 596M   |
-| `qwen3-1.7b`       | Fine-tuned decoder `Qwen/Qwen3-1.7B`                                   | 1.72B  |
-| `transformer`      | Fine-tuned model of your choice, set with `-o model=<hf-id>`           |        |
+| Name                | Description                                                            | Params |
+| ------------------- | ---------------------------------------------------------------------- | ------ |
+| `memorize`          | Lexicon baseline that tags the longest entity strings seen in training | –      |
+| `bert`              | Fine-tuned `google-bert/bert-base-cased`                               | 108M   |
+| `roberta`           | Fine-tuned `FacebookAI/roberta-base`                                   | 124M   |
+| `roberta-large`     | Fine-tuned `FacebookAI/roberta-large`                                  | 354M   |
+| `xlm-roberta-large` | Fine-tuned `FacebookAI/xlm-roberta-large`                              | 560M   |
+| `modernbert`        | Fine-tuned `answerdotai/ModernBERT-base`                               | 150M   |
+| `modernbert-large`  | Fine-tuned `answerdotai/ModernBERT-large`                              | 396M   |
+| `deberta`           | Fine-tuned `microsoft/deberta-v3-base`                                 | 184M   |
+| `deberta-large`     | Fine-tuned `microsoft/deberta-v3-large`                                | 434M   |
+| `ettin`             | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 150M   |
+| `ettin-400m`        | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 396M   |
+| `ettin-1b`          | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 | 1.03B  |
+| `ettin-dec-150m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-150m`                       | 149M   |
+| `ettin-dec-400m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-400m`                       | 395M   |
+| `ettin-dec-1b`      | Fine-tuned decoder `jhu-clsp/ettin-decoder-1b`                         | 1.03B  |
+| `qwen3-0.6b`        | Fine-tuned decoder `Qwen/Qwen3-0.6B`                                   | 596M   |
+| `qwen3-1.7b`        | Fine-tuned decoder `Qwen/Qwen3-1.7B`                                   | 1.72B  |
+| `qwen3-4b`          | Fine-tuned decoder `Qwen/Qwen3-4B`                                     | 4.02B  |
 
 Params counts the fine-tuned model, including the tagging head, whose size varies
 slightly by dataset. Results are in each dataset's doc.
