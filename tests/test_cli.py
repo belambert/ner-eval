@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from typer.testing import CliRunner
 
@@ -28,6 +29,14 @@ class Fixed:
     def predict(self, sents):
         return PREDS[: len(sents)]
 
+    def save(self, path):
+        path.mkdir(parents=True)
+
+    @classmethod
+    def load(cls, path):
+        assert Path(path).is_dir()
+        return cls()
+
 
 def run(*args):
     res = CliRunner().invoke(cli.app, [*map(str, args), "--json"])
@@ -44,7 +53,22 @@ def test_preds_rescore_round_trip(tmp_path, monkeypatch):
     monkeypatch.setattr(
         data, "load", lambda ds, splits=data.SPLITS: {s: SPLITS[s] for s in splits}
     )
-    [ev] = run("evaluate", "fixed", "cleanconll", "--max-eval", 2, "--preds", tmp_path)
+    models = tmp_path / "models"
+    [tr] = run("train", "fixed", "cleanconll", "--models", models, "--max-eval", 2)
+    assert (models / "conll-fixed-cleanconll").is_dir()
+
+    [ev] = run(
+        "evaluate",
+        "fixed",
+        "cleanconll",
+        "--models",
+        models,
+        "--max-eval",
+        2,
+        "--preds",
+        tmp_path,
+    )
+    assert ev["ckpt"] == f"{models}/conll-fixed-cleanconll"
     path = tmp_path / "conll-fixed-cleanconll-test.jsonl"
     assert path.read_text().splitlines() == [
         '["B-LOC","I-LOC","I-LOC","O"]',
@@ -53,6 +77,6 @@ def test_preds_rescore_round_trip(tmp_path, monkeypatch):
 
     [rs] = run("rescore", path)
     assert (rs["dataset"], rs["split"], rs["n"]) == ("cleanconll", "test", 2)
-    assert counts(rs) == counts(ev) == (1, 1, 1)
+    assert counts(rs) == counts(ev) == counts(tr) == (1, 1, 1)
     [rs] = run("rescore", path, "--overlap", 0.5)
     assert counts(rs) == (2, 0, 0)

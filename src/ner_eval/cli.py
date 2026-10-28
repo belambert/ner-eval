@@ -20,84 +20,83 @@ Overlap = Annotated[
         "of the same type is at least this; 1.0 is exact match."
     ),
 ]
+Datasets = Annotated[
+    list[str] | None,
+    typer.Argument(help="Dataset ids, e.g. cleanconll; default all downloaded."),
+]
+Models = Annotated[
+    str,
+    typer.Option(
+        help="Model directory, holding one MODELS/CORPUS-METHOD-DATASET per run; "
+        "for evaluate, also a Hugging Face user or org."
+    ),
+]
+MaxEval = Annotated[int | None, typer.Option(help="Score only the first N sentences.")]
+Out = Annotated[Path | None, typer.Option(help="Append results to this JSONL file.")]
+Preds = Annotated[
+    Path | None,
+    typer.Option(
+        help="Write predicted tags to PREDS/CORPUS-METHOD-DATASET-SPLIT.jsonl "
+        "for `rescore`."
+    ),
+]
+Json = Annotated[bool, typer.Option("--json")]
+
+
+@app.command()
+def train(
+    method: str,
+    datasets: Datasets = None,
+    opt: Annotated[
+        list[str] | None,
+        typer.Option("-o", "--opt", help="Method option as key=value, e.g. epochs=1."),
+    ] = None,
+    models: Models = "results/models",
+    split: str = "test",
+    max_eval: MaxEval = None,
+    out: Out = None,
+    preds: Preds = None,
+    overlap: Overlap = 1.0,
+    as_json: Json = False,
+) -> None:
+    """Train METHOD on each dataset's train split, save it to MODELS, and score it on SPLIT."""
+    assert method in METHODS, f"unknown method {method!r}; choose from {list(METHODS)}"
+    opts = dict(_parse_opt(o) for o in opt or [])
+    rows = []
+    for ds in datasets or data.list_datasets():
+        model = METHODS[method](**opts)
+        model.fit(data.load(ds, ("train",))["train"])
+        ckpt = f"{models}/{data.run_name(method, ds)}"
+        model.save(Path(ckpt))
+        row = _evaluate(model, method, ds, split, max_eval, preds, overlap, as_json)
+        rows.append(dict(opts=opts, ckpt=ckpt) | row)
+        _write(rows[-1], out)
+
+    if as_json:
+        typer.echo(json.dumps(rows, indent=2))
 
 
 @app.command()
 def evaluate(
     method: str,
-    datasets: Annotated[
-        list[str] | None,
-        typer.Argument(help="Dataset ids, e.g. cleanconll; default all downloaded."),
-    ] = None,
+    datasets: Datasets = None,
+    models: Models = "results/models",
     split: str = "test",
-    opt: Annotated[
-        list[str] | None,
-        typer.Option("-o", "--opt", help="Method option as key=value, e.g. epochs=1."),
-    ] = None,
-    max_eval: Annotated[
-        int | None, typer.Option(help="Score only the first N sentences.")
-    ] = None,
-    out: Annotated[
-        Path | None, typer.Option(help="Append results to this JSONL file.")
-    ] = None,
-    save: Annotated[
-        Path | None,
-        typer.Option(help="Save each trained model to SAVE/CORPUS-METHOD-DATASET."),
-    ] = None,
-    load: Annotated[
-        str | None,
-        typer.Option(
-            help="Load models from LOAD/CORPUS-METHOD-DATASET instead of training; "
-            "LOAD is a local directory or a Hugging Face user or org."
-        ),
-    ] = None,
-    preds: Annotated[
-        Path | None,
-        typer.Option(
-            help="Write predicted tags to PREDS/CORPUS-METHOD-DATASET-SPLIT.jsonl "
-            "for `rescore`."
-        ),
-    ] = None,
+    max_eval: MaxEval = None,
+    out: Out = None,
+    preds: Preds = None,
     overlap: Overlap = 1.0,
-    as_json: Annotated[bool, typer.Option("--json")] = False,
+    as_json: Json = False,
 ) -> None:
-    """Train METHOD on each dataset's train split (or load it) and score it on SPLIT."""
+    """Score METHOD's trained models from MODELS on each dataset's SPLIT."""
     assert method in METHODS, f"unknown method {method!r}; choose from {list(METHODS)}"
-    opts = dict(_parse_opt(o) for o in opt or [])
-    assert not (load and opts), "options can't be applied to a loaded model"
     rows = []
     for ds in datasets or data.list_datasets():
-        splits = data.load(ds)
-        name = data.run_name(method, ds)
-        if load:
-            model = methods.load(method, f"{load}/{name}")
-        else:
-            model = METHODS[method](**opts)
-            model.fit(splits["train"])
-        if save:
-            model.save(save / name)
-
-        gold = splits[split][:max_eval]
-        pred = model.predict([x.tokens for x in gold])
-        if preds:
-            preds.mkdir(parents=True, exist_ok=True)
-            with (preds / f"{name}-{split}.jsonl").open("w") as f:
-                f.writelines(json.dumps(p, separators=(",", ":")) + "\n" for p in pred)
-
-        row = dict(
-            method=method,
-            opts=opts,
-            dataset=ds,
-            split=split,
-            n=len(gold),
-            overlap=overlap,
-        )
-        if load:
-            row["ckpt"] = f"{load}/{name}"
-        rows.append(row | _score(f"{ds:<10}", gold, pred, overlap, as_json))
-        if out:
-            with out.open("a") as f:
-                f.write(json.dumps(rows[-1]) + "\n")
+        ckpt = f"{models}/{data.run_name(method, ds)}"
+        model = methods.load(method, ckpt)
+        row = _evaluate(model, method, ds, split, max_eval, preds, overlap, as_json)
+        rows.append(dict(ckpt=ckpt) | row)
+        _write(rows[-1], out)
 
     if as_json:
         typer.echo(json.dumps(rows, indent=2))
@@ -107,10 +106,10 @@ def evaluate(
 def rescore(
     files: Annotated[
         list[Path],
-        typer.Argument(help="Prediction files written by `evaluate --preds`."),
+        typer.Argument(help="Prediction files written by `train` or `evaluate` with `--preds`."),
     ],
     overlap: Overlap = 1.0,
-    as_json: Annotated[bool, typer.Option("--json")] = False,
+    as_json: Json = False,
 ) -> None:
     """Score saved predictions against gold tags without rerunning the model."""
     rows = []
@@ -118,7 +117,7 @@ def rescore(
         # the dataset and split are the last two parts of CORPUS-METHOD-DATASET-SPLIT
         *_, ds, split = path.stem.rsplit("-", 2)
         pred = [json.loads(line) for line in path.open()]
-        # predictions cover the first N sentences when evaluate ran with --max-eval
+        # predictions cover the first N sentences when run with --max-eval
         gold = data.load(ds, (split,))[split][: len(pred)]
         assert len(gold) == len(pred), f"{path} has more sentences than {ds}/{split}"
         row = dict(
@@ -142,6 +141,36 @@ def list_() -> None:
 def download() -> None:
     """Download the data into $NER_EVAL_DATA (default ./data)."""
     data.download()
+
+
+def _evaluate(
+    model: methods.Tagger,
+    method: str,
+    ds: str,
+    split: str,
+    max_eval: int | None,
+    preds: Path | None,
+    overlap: float,
+    quiet: bool,
+) -> dict[str, Any]:
+    """Predict on SPLIT, optionally save the predictions, and return a result row."""
+    gold = data.load(ds, (split,))[split][:max_eval]
+    pred = model.predict([x.tokens for x in gold])
+    if preds:
+        preds.mkdir(parents=True, exist_ok=True)
+        path = preds / f"{data.run_name(method, ds)}-{split}.jsonl"
+        with path.open("w") as f:
+            f.writelines(json.dumps(p, separators=(",", ":")) + "\n" for p in pred)
+
+    row = dict(method=method, dataset=ds, split=split, n=len(gold), overlap=overlap)
+    return row | _score(f"{ds:<10}", gold, pred, overlap, quiet)
+
+
+def _write(row: dict[str, Any], out: Path | None) -> None:
+    """Append ROW to the JSONL file OUT, if given."""
+    if out:
+        with out.open("a") as f:
+            f.write(json.dumps(row) + "\n")
 
 
 def _score(
