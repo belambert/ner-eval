@@ -95,18 +95,13 @@ To push the saved transformer models to private Hugging Face repos:
 | `modernbert-large`  | Fine-tuned `answerdotai/ModernBERT-large`                              | 396M   |
 | `deberta`           | Fine-tuned `microsoft/deberta-v3-base`                                 | 184M   |
 | `deberta-large`     | Fine-tuned `microsoft/deberta-v3-large`                                | 434M   |
-| `ettin`             | Fine-tuned `jhu-clsp/ettin-encoder-150m`                               | 150M   |
-| `ettin-400m`        | Fine-tuned `jhu-clsp/ettin-encoder-400m`                               | 396M   |
-| `ettin-1b`          | Fine-tuned `jhu-clsp/ettin-encoder-1b`                                 | 1.03B  |
-| `ettin-dec-150m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-150m`                       | 149M   |
-| `ettin-dec-400m`    | Fine-tuned decoder `jhu-clsp/ettin-decoder-400m`                       | 395M   |
-| `ettin-dec-1b`      | Fine-tuned decoder `jhu-clsp/ettin-decoder-1b`                         | 1.03B  |
 | `qwen3-0.6b`        | Fine-tuned decoder `Qwen/Qwen3-0.6B`                                   | 596M   |
 | `qwen3-1.7b`        | Fine-tuned decoder `Qwen/Qwen3-1.7B`                                   | 1.72B  |
 | `qwen3-4b`          | Fine-tuned decoder `Qwen/Qwen3-4B`                                     | 4.02B  |
 
 Params counts the fine-tuned model, including the tagging head, whose size varies
-slightly by dataset. Results are in each dataset's doc.
+slightly by dataset. Results are in each dataset's doc. The Ettin models were removed
+to shorten the list; their results are in [docs/ettin.md](docs/ettin.md).
 
 The transformer methods fine-tune a Hugging Face model with a linear tagging head.
 Encoders predict each word's label from its first subword. Decoders use its last
