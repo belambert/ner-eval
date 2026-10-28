@@ -54,6 +54,11 @@ span classifier and 96.98 with FLERT's document context. Here, with a plain line
 tagger on single sentences, it scores 0.949, below `roberta-large`, so the gap to those
 results likely comes from the span classifier and the context, not the encoder.
 
+[roberta-large-errors.html](roberta-large-errors.html) shows every sentence in the test
+split where `roberta-large` makes an error, written by `ner-errors`. Of its 325 errors,
+128 are wrong types, 108 are boundary errors, 56 are spurious entities, and 33 are
+missed entities. GitHub shows the file as source, so download it to view it.
+
 ## Changes From CoNLL-03
 
 The separate `conll-diff` command writes an HTML page of every entity label CleanCoNLL changed from CoNLL-03,

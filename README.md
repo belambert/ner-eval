@@ -60,6 +60,13 @@ name, loads the gold tags, and prints the same scores as `evaluate` (`--json` to
     uv run ner-eval evaluate bert --preds results/preds
     uv run ner-eval rescore results/preds/*.jsonl --overlap 0.5
 
+The separate `ner-errors` command turns a predictions file into an HTML page of every
+sentence the model got wrong, showing gold and predicted entities side by side. It
+counts wrong types, boundary errors, missed entities, and spurious ones, with filters
+by error kind and type:
+
+    uv run ner-errors results/preds/conll-roberta-large-cleanconll-test.jsonl site/errors.html
+
 To train and evaluate every method on every dataset, run the sweep script:
 
     scripts/run_all.sh
