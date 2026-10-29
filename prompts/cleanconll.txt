@@ -1,7 +1,2 @@
-Label the named entities in the sentence below. Each entity has one of four types.
-PER: names of people, real or fictional. Titles and roles such as "Mr." or "President" are not part of the name.
-LOC: names of places, such as countries, cities, states, regions, continents, rivers, and mountains. A country stays LOC when it stands for its government or its people.
-ORG: names of organizations, such as companies, government bodies, political parties, international bodies like the EU, newspapers, news agencies, universities, and sports clubs. A place name that stands for a sports team, such as a country's national side, is ORG. A building that stands for an institution, such as the White House or the Kremlin, is ORG.
-MISC: other names, such as nationalities and other words derived from names (German, Moslem), religions, languages, events and tournaments (World Cup, Olympics), titles of works, products, and stock indices.
-Label only proper names, not common nouns, pronouns, or dates. Label each name as a whole; a name inside a longer name takes the longer name's type.
+Tag names as PER, LOC, ORG, or MISC. A place naming a sports team is ORG; a country naming its government stays LOC; the White House or Kremlin is ORG. MISC covers nationalities, events, works, and indices. Titles like "Mr." are not part of names.
 Sentence:
