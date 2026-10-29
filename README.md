@@ -67,6 +67,10 @@ by error kind and type:
 
     uv run ner-errors results/preds/conll-roberta-large-cleanconll-test.jsonl site/errors.html
 
+The page for `roberta-large` on CleanCoNLL is published on [GitHub Pages][errors].
+
+[errors]: https://belambert.github.io/ner-eval/roberta-large-errors.html
+
 To train and evaluate every method on every dataset, run the sweep script:
 
     scripts/run_all.sh
