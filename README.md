@@ -119,11 +119,13 @@ The Qwen3 models use `lr=2e-5`, a more typical rate for full fine-tuning of
 LLMs. Words are joined with spaces before tokenization rather than passed pre-split,
 because some BPE tokenizers (e.g. ModernBERT's) would otherwise drop the spaces they
 were trained with. Training runs on CUDA, MPS, or CPU, whichever is available, with
-fp32 weights (whatever the checkpoint's dtype) and bf16 autocast on CUDA. The main
-options and their defaults are `epochs=3`, `lr=5e-5`, `batch_size=32`, `max_len=256`
-(subwords; words past it are tagged `O`), `warmup=0.1`, `max_train` (subsample the
-training set), `subword=first`, `bidirectional=False`, `repeat=False`, `device`, and
-`seed=0`.
+fp32 weights (whatever the checkpoint's dtype) and bf16 autocast on CUDA.
+`checkpointing=True` recomputes activations during the backward pass, which trains
+the same model with much less memory but more slowly. The main options and their
+defaults are `epochs=3`, `lr=5e-5`, `batch_size=32`, `max_len=256` (subwords; words
+past it are tagged `O`), `warmup=0.1`, `max_train` (subsample the training set),
+`subword=first`, `bidirectional=False`, `repeat=False`, `checkpointing=False`,
+`device`, and `seed=0`.
 
 To add a method, write a class with `fit(train: list[Sentence])` and
 `predict(sents: list[list[str]]) -> list[list[str]]`, then register it in
