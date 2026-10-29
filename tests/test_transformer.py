@@ -6,11 +6,36 @@ from ner_eval.cli import _parse_opt
 from ner_eval.methods.transformer import Transformer, make_bidirectional
 
 
-class FakeTok:
-    """Splits on spaces and in half for words over 4 chars, with BPE-style offsets."""
+class Enc(dict):
+    """A dict with the `sequence_ids` method of a tokenizer's BatchEncoding."""
 
-    def __call__(self, text, **_):
-        offs, i = [(0, 0)], 0
+    def sequence_ids(self):
+        return self.seq
+
+
+class FakeTok:
+    """Splits on spaces and in half for words over 4 chars, with BPE-style offsets.
+
+    A pair is encoded as [CLS] a [SEP] b [SEP].
+    """
+
+    def __call__(self, *texts, add_special_tokens=True, **_):
+        offs, seq = [], []
+        for q, text in enumerate(texts):
+            o = self._offsets(text)
+            offs += o + [(0, 0)] * add_special_tokens
+            seq += [q] * len(o) + [None] * add_special_tokens
+        if add_special_tokens:
+            offs, seq = [(0, 0)] + offs, [None] + seq
+        enc = Enc(input_ids=list(range(len(offs))), offset_mapping=offs)
+        enc.seq = seq
+        return enc
+
+    def num_special_tokens_to_add(self, pair=False):
+        return 3 if pair else 2
+
+    def _offsets(self, text):
+        offs, i = [], 0
         for w in text.split(" "):
             # offsets after the first word include the leading space, as in ModernBERT
             start = i - 1 if i else i
@@ -19,8 +44,7 @@ class FakeTok:
             else:
                 offs.append((start, i + len(w)))
             i += len(w) + 1
-        offs.append((0, 0))
-        return {"input_ids": list(range(len(offs))), "offset_mapping": offs}
+        return offs
 
 
 def test_encode_marks_first_subwords():
@@ -44,6 +68,23 @@ def test_encode_repeat_labels_second_copy():
     ids, wids = t._encode(["Ann", "visited", "Rome"])
     assert ids == list(range(6)) * 2
     assert wids == [None] * 6 + [None, 0, None, 1, 2, None]
+
+
+def test_encode_prompt_is_unlabeled():
+    t = Transformer(max_len=512, prompt="Tag it")
+    t.tok = FakeTok()
+    ids, wids = t._encode(["Ann", "visited", "Rome"])
+    # [CLS] Tag it [SEP] Ann vis ited Rome [SEP]
+    assert len(ids) == 9
+    assert wids == [None] * 4 + [0, 1, None, 2, None]
+
+
+def test_encode_repeat_with_prompt_repeats_only_sentence():
+    t = Transformer(max_len=512, prompt="Tag it", repeat=True)
+    t.tok = FakeTok()
+    ids, wids = t._encode(["Ann", "visited", "Rome"])
+    assert ids == list(range(9)) + list(range(4, 9))
+    assert wids == [None] * 9 + [0, 1, None, 2, None]
 
 
 def test_parse_opt():

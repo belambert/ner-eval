@@ -35,6 +35,7 @@ class Transformer:
     or `bidirectional=True`, which drops the causal mask so every subword sees the
     whole sentence, or `repeat=True`, which feeds the sentence twice and labels the
     second copy, so every labeled subword sees the whole sentence through the first.
+    A `prompt`, if given, goes before the sentence as its own unlabeled sequence.
     """
 
     model: str = "google-bert/bert-base-cased"
@@ -50,6 +51,7 @@ class Transformer:
     bidirectional: bool = False
     repeat: bool = False
     checkpointing: bool = False
+    prompt: str = ""
 
     def fit(self, train: list[Sentence]) -> None:
         random.seed(self.seed)
@@ -159,12 +161,21 @@ class Transformer:
         char_word: list[int | None] = []
         for i, word in enumerate(words):
             char_word += [i] * len(word) + [None]
+        # a prompt is the first of a pair, so offsets and truncation apply to the sentence
+        seq, n = (1, self._prompt_len()) if self.prompt else (0, 0)
         enc = self.tok(
-            text, return_offsets_mapping=True, truncation=True, max_length=self.max_len
+            *([self.prompt] if self.prompt else []),
+            text,
+            return_offsets_mapping=True,
+            truncation="only_second" if self.prompt else True,
+            max_length=self.max_len + n,
         )
 
         # map by the last char; offsets may or may not include a leading space
-        ws = [char_word[e - 1] if e > s else None for s, e in enc["offset_mapping"]]
+        ws = [
+            char_word[e - 1] if e > s and q == seq else None
+            for (s, e), q in zip(enc["offset_mapping"], enc.sequence_ids())
+        ]
         wids: list[int | None] = [None] * len(ws)
         seen: set[int] = set()
         order = range(len(ws)) if self.subword == "first" else reversed(range(len(ws)))
@@ -174,8 +185,19 @@ class Transformer:
                 seen.add(w)
         ids = enc["input_ids"]
         if self.repeat:
-            return ids + ids, [None] * len(ids) + wids
+            # repeat only the sentence, not the prompt before it
+            k = enc.sequence_ids().index(1) if self.prompt else 0
+            return ids + ids[k:], [None] * len(ids) + wids[k:]
         return ids, wids
+
+    def _prompt_len(self) -> int:
+        """Return how many subwords the prompt and the pair's extra special tokens add."""
+        n = len(self.tok(self.prompt, add_special_tokens=False)["input_ids"])
+        return (
+            n
+            + self.tok.num_special_tokens_to_add(pair=True)
+            - self.tok.num_special_tokens_to_add()
+        )
 
     def _pad(
         self, seqs: list[list[int]], value: int | None = None
