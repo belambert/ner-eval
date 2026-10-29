@@ -87,8 +87,8 @@ sentence, so only `repeat` applies to them.
 Scores are exact-match F1 on the test split with one seed. The `qwen3-4b` runs with the
 new options used `checkpointing=True` to fit in memory, which doesn't change results.
 
-Both options add about 0.1 F1 to every decoder, and the gain now grows with size:
-`qwen3-4b` with `repeat` scores 0.954, level with the best encoders. `repeat` beats
+Both options add about 0.1 F1 to every decoder, and with them, scores now grow with
+size: `qwen3-4b` with `repeat` scores 0.954, level with the best encoders. `repeat` beats
 `bidirectional` by about 0.01 at every size, perhaps because the model keeps the causal
 attention it was pretrained with. Combining them adds nothing over `bidirectional`
 alone. For encoders, `repeat` changes F1 by -0.007 to +0.001, within the noise of a
