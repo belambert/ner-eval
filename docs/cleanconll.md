@@ -57,7 +57,10 @@ results likely comes from the span classifier and the context, not the encoder.
 [roberta-large-errors.html](roberta-large-errors.html) shows every sentence in the test
 split where `roberta-large` makes an error, written by `ner-errors`. Of its 325 errors,
 128 are wrong types, 108 are boundary errors, 56 are spurious entities, and 33 are
-missed entities. GitHub shows the file as source, so download it to view it.
+missed entities. The `pages` workflow publishes it on [GitHub Pages][errors], since
+GitHub shows the file itself as source.
+
+[errors]: https://belambert.github.io/ner-eval/roberta-large-errors.html
 
 ## Changes From CoNLL-03
 

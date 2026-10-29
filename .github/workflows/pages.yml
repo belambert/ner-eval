@@ -24,6 +24,7 @@ jobs:
       - run: uv sync
       - run: uv run ner-eval download
       - run: uv run conll-diff site/index.html
+      - run: cp docs/*-errors.html site/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
